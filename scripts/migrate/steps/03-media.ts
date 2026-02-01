@@ -219,6 +219,8 @@ export async function migrateMedia(payload: Payload): Promise<MediaMigrationResu
                 collection: 'media',
                 data: {
                   alt: attachment.post_title || filename,
+                  createdAt: attachment.post_date_gmt ? new Date(attachment.post_date_gmt).toISOString() : undefined,
+                  updatedAt: attachment.post_modified_gmt ? new Date(attachment.post_modified_gmt).toISOString() : undefined,
                 },
                 file: {
                   name: filename,

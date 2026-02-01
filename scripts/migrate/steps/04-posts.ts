@@ -206,6 +206,8 @@ export async function migratePosts(
             categories,
             tags,
             publishedAt: post.post_date_gmt ? new Date(post.post_date_gmt).toISOString() : undefined,
+            createdAt: post.post_date_gmt ? new Date(post.post_date_gmt).toISOString() : undefined,
+            updatedAt: post.post_modified_gmt ? new Date(post.post_modified_gmt).toISOString() : undefined,
             _status: status,
             meta: {
               title: decode(post.post_title),
