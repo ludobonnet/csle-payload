@@ -7,35 +7,27 @@ import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
 import { homeStatic } from '@/endpoints/seed/home-static'
 
-import { RenderBlocks } from '@/blocks/RenderBlocks'
-import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
-export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const pages = await payload.find({
-    collection: 'pages',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    select: {
-      slug: true,
-    },
-  })
+import { PageContent } from './components/PageContent'
+import { PostContent } from './components/PostContent'
+import { CategoryArchive } from './components/CategoryArchive'
+import { HomeContent } from './components/HomeContent'
 
-  const params = pages.docs
-    ?.filter((doc) => {
-      return doc.slug !== 'home'
-    })
-    .map(({ slug }) => {
-      return { slug }
-    })
+import type { Category, Post } from '@/payload-types'
 
-  return params
-}
+type ResolvedSlug =
+  | { type: 'page'; data: RequiredDataFromCollectionSlug<'pages'> }
+  | { type: 'home'; data: { page: RequiredDataFromCollectionSlug<'pages'>; featuredPosts: Post[] } }
+  | { type: 'category'; data: Category }
+  | { type: 'post'; data: Post }
+  | { type: 'not-found'; data: null }
+
+// Use dynamic rendering to avoid Neon free tier memory issues during SSG
+// Pages will be server-rendered on demand and cached by Vercel's Edge cache
+export const dynamic = 'force-dynamic'
 
 type Args = {
   params: Promise<{
@@ -43,71 +35,164 @@ type Args = {
   }>
 }
 
-export default async function Page({ params: paramsPromise }: Args) {
+export default async function DynamicPage({ params: paramsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
   const { slug = 'home' } = await paramsPromise
-  // Decode to support slugs with special characters
   const decodedSlug = decodeURIComponent(slug)
   const url = '/' + decodedSlug
-  let page: RequiredDataFromCollectionSlug<'pages'> | null
 
-  page = await queryPageBySlug({
-    slug: decodedSlug,
-  })
+  const resolved = await resolveSlug({ slug: decodedSlug, draft })
 
-  // Remove this code once your website is seeded
-  if (!page && slug === 'home') {
-    page = homeStatic
+  switch (resolved.type) {
+    case 'home':
+      return (
+        <div>
+          <PageClient />
+          <PayloadRedirects disableNotFound url={url} />
+          {draft && <LivePreviewListener />}
+          <HomeContent page={resolved.data.page} featuredPosts={resolved.data.featuredPosts} />
+        </div>
+      )
+
+    case 'page':
+      return (
+        <article className="pt-16 pb-24">
+          <PageClient />
+          <PayloadRedirects disableNotFound url={url} />
+          {draft && <LivePreviewListener />}
+          <PageContent page={resolved.data} />
+        </article>
+      )
+
+    case 'category':
+      return (
+        <div className="pt-24 pb-24">
+          <PageClient />
+          <PayloadRedirects disableNotFound url={url} />
+          {draft && <LivePreviewListener />}
+          <CategoryArchive category={resolved.data} />
+        </div>
+      )
+
+    case 'post':
+      return (
+        <article className="pt-16 pb-16">
+          <PageClient />
+          <PayloadRedirects disableNotFound url={url} />
+          {draft && <LivePreviewListener />}
+          <PostContent post={resolved.data} />
+        </article>
+      )
+
+    case 'not-found':
+    default:
+      return <PayloadRedirects url={url} />
   }
-
-  if (!page) {
-    return <PayloadRedirects url={url} />
-  }
-
-  const { hero, layout } = page
-
-  return (
-    <article className="pt-16 pb-24">
-      <PageClient />
-      {/* Allows redirects for valid pages too */}
-      <PayloadRedirects disableNotFound url={url} />
-
-      {draft && <LivePreviewListener />}
-
-      <RenderHero {...hero} />
-      <RenderBlocks blocks={layout} />
-    </article>
-  )
 }
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
   const { slug = 'home' } = await paramsPromise
-  // Decode to support slugs with special characters
   const decodedSlug = decodeURIComponent(slug)
-  const page = await queryPageBySlug({
-    slug: decodedSlug,
-  })
-
-  return generateMeta({ doc: page })
-}
-
-const queryPageBySlug = cache(async ({ slug }: { slug: string }) => {
   const { isEnabled: draft } = await draftMode()
 
-  const payload = await getPayload({ config: configPromise })
+  const resolved = await resolveSlug({ slug: decodedSlug, draft })
 
-  const result = await payload.find({
-    collection: 'pages',
-    draft,
-    limit: 1,
-    pagination: false,
-    overrideAccess: draft,
-    where: {
-      slug: {
-        equals: slug,
+  if (resolved.type === 'not-found') {
+    return {}
+  }
+
+  // For home page, use the page data for metadata
+  if (resolved.type === 'home') {
+    return generateMeta({ doc: resolved.data.page })
+  }
+
+  return generateMeta({ doc: resolved.data })
+}
+
+const resolveSlug = cache(
+  async ({ slug, draft }: { slug: string; draft: boolean }): Promise<ResolvedSlug> => {
+    const payload = await getPayload({ config: configPromise })
+
+    // Special case: home page with featured posts
+    if (slug === 'home') {
+      const [pageResult, postsResult] = await Promise.all([
+        payload.find({
+          collection: 'pages',
+          draft,
+          limit: 1,
+          pagination: false,
+          overrideAccess: draft,
+          where: { slug: { equals: 'home' } },
+        }),
+        payload.find({
+          collection: 'posts',
+          draft: false,
+          limit: 10,
+          pagination: false,
+          overrideAccess: false,
+          sort: '-publishedAt',
+          where: { _status: { equals: 'published' } },
+        }),
+      ])
+
+      const homePage = pageResult.docs[0] || homeStatic
+      return {
+        type: 'home',
+        data: {
+          page: homePage,
+          featuredPosts: postsResult.docs,
+        },
+      }
+    }
+
+    // 1. Check pages first
+    const pageResult = await payload.find({
+      collection: 'pages',
+      draft,
+      limit: 1,
+      pagination: false,
+      overrideAccess: draft,
+      where: {
+        slug: { equals: slug },
       },
-    },
-  })
+    })
 
-  return result.docs?.[0] || null
-})
+    if (pageResult.docs.length > 0) {
+      return { type: 'page', data: pageResult.docs[0] }
+    }
+
+    // 2. Check categories
+    const categoryResult = await payload.find({
+      collection: 'categories',
+      limit: 1,
+      pagination: false,
+      overrideAccess: false,
+      where: {
+        slug: { equals: slug },
+      },
+    })
+
+    if (categoryResult.docs.length > 0) {
+      return { type: 'category', data: categoryResult.docs[0] }
+    }
+
+    // 3. Check posts
+    const postResult = await payload.find({
+      collection: 'posts',
+      draft,
+      limit: 1,
+      pagination: false,
+      overrideAccess: draft,
+      where: {
+        slug: { equals: slug },
+      },
+    })
+
+    if (postResult.docs.length > 0) {
+      return { type: 'post', data: postResult.docs[0] }
+    }
+
+    // 4. Not found
+    return { type: 'not-found', data: null }
+  },
+)

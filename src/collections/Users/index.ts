@@ -21,6 +21,22 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
     },
+    {
+      name: 'bio',
+      type: 'textarea',
+      admin: {
+        rows: 4,
+        description: 'Courte bio affichée sur les articles',
+      },
+    },
+    {
+      name: 'avatar',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Photo de profil pour la section auteur',
+      },
+    },
   ],
   timestamps: true,
 }
