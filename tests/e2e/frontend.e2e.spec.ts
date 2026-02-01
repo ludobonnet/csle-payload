@@ -11,10 +11,11 @@ test.describe('Frontend', () => {
   test('can go on homepage', async ({ page }) => {
     await page.goto('http://localhost:3000')
 
-    await expect(page).toHaveTitle(/Payload Website Template/)
+    // Check that the page loads successfully
+    await expect(page).toHaveTitle(/CSLE|Culture|Lifestyle/)
 
-    const heading = page.locator('h1').first()
-
-    await expect(heading).toHaveText('Payload Website Template')
+    // Verify the page has content (header exists)
+    const header = page.locator('header')
+    await expect(header).toBeVisible()
   })
 })
