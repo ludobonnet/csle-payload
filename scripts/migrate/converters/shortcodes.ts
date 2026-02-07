@@ -237,6 +237,90 @@ function processObjectEmbeds(content: string): string {
 }
 
 /**
+ * Create an embed placeholder div
+ */
+function createEmbedPlaceholder(provider: 'youtube' | 'vimeo' | 'dailymotion', videoId: string, originalUrl: string): string {
+  const urls: Record<string, string> = {
+    youtube: `https://www.youtube.com/watch?v=${videoId}`,
+    vimeo: `https://vimeo.com/${videoId}`,
+    dailymotion: `https://www.dailymotion.com/video/${videoId}`,
+  }
+  return `<div data-embed="${provider}" data-embed-id="${videoId}" data-embed-url="${urls[provider]}"></div>`
+}
+
+/**
+ * Process naked video URLs (WordPress oEmbed pattern)
+ *
+ * WordPress converts URLs alone on a line to embedded players via oEmbed.
+ * This function detects those naked URLs and converts them to embed placeholders.
+ *
+ * Rules:
+ * - URL alone in a <p> tag → CONVERT
+ * - URL in the middle of text → DO NOT CONVERT
+ * - URL already in an <a href> → DO NOT CONVERT
+ */
+function processNakedVideoUrls(content: string): string {
+  // Pattern: <p> containing only whitespace and a URL, then </p>
+  // This catches WordPress's wpautop behavior which wraps lines in <p> tags
+  const paragraphPattern = /<p>\s*(https?:\/\/[^\s<]+)\s*<\/p>/gi
+
+  content = content.replace(paragraphPattern, (match, url) => {
+    // YouTube (watch, embed, short URLs)
+    const youtubeId = extractYouTubeId(url)
+    if (youtubeId) {
+      debug('Converted naked YouTube URL', { url, videoId: youtubeId })
+      return createEmbedPlaceholder('youtube', youtubeId, url)
+    }
+
+    // Vimeo
+    const vimeoId = extractVimeoId(url)
+    if (vimeoId) {
+      debug('Converted naked Vimeo URL', { url, videoId: vimeoId })
+      return createEmbedPlaceholder('vimeo', vimeoId, url)
+    }
+
+    // Dailymotion
+    const dailymotionId = extractDailymotionId(url)
+    if (dailymotionId) {
+      debug('Converted naked Dailymotion URL', { url, videoId: dailymotionId })
+      return createEmbedPlaceholder('dailymotion', dailymotionId, url)
+    }
+
+    // Not a recognized video URL, keep as-is
+    return match
+  })
+
+  // Also handle URLs on their own line without <p> wrapper (edge cases)
+  // These could appear in raw content before wpautop processing
+  // Match URL at start of line, possibly with trailing whitespace, followed by newline or end
+  const linePattern = /^(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|vimeo\.com\/|dailymotion\.com\/video\/|dai\.ly\/)[^\s<]+)\s*$/gim
+
+  content = content.replace(linePattern, (match, url) => {
+    const youtubeId = extractYouTubeId(url)
+    if (youtubeId) {
+      debug('Converted naked YouTube URL (line)', { url, videoId: youtubeId })
+      return createEmbedPlaceholder('youtube', youtubeId, url)
+    }
+
+    const vimeoId = extractVimeoId(url)
+    if (vimeoId) {
+      debug('Converted naked Vimeo URL (line)', { url, videoId: vimeoId })
+      return createEmbedPlaceholder('vimeo', vimeoId, url)
+    }
+
+    const dailymotionId = extractDailymotionId(url)
+    if (dailymotionId) {
+      debug('Converted naked Dailymotion URL (line)', { url, videoId: dailymotionId })
+      return createEmbedPlaceholder('dailymotion', dailymotionId, url)
+    }
+
+    return match
+  })
+
+  return content
+}
+
+/**
  * Process a video URL and convert to embed placeholder
  */
 function processVideoUrl(src: string, originalMatch: string): string {
@@ -330,6 +414,12 @@ function removeUnsupportedShortcodes(content: string): string {
  */
 export function processShortcodes(content: string): string {
   // Order matters - process nested shortcodes from inside out
+
+  // First: Handle naked video URLs (WordPress oEmbed pattern)
+  // These are URLs alone on a line that WordPress auto-embeds
+  content = processNakedVideoUrls(content)
+
+  // Then: Process explicit shortcodes
   content = processCaption(content)
   content = processGallery(content)
   content = processYouTube(content)
