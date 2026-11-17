@@ -67,7 +67,7 @@ export async function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-block mb-4">
-              <Logo className="h-8 w-auto" />
+              <Logo className="text-white" />
             </Link>
             <p className="text-body-sm text-white/60 mb-6 max-w-xs">
               Blog magazine lifestyle et culture. Tourisme, musique, food et belles découvertes depuis 2008.

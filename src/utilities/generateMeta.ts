@@ -4,19 +4,17 @@ import type { Media, Page, Post, Config } from '../payload-types'
 
 import { mergeOpenGraph } from './mergeOpenGraph'
 import { getServerSideURL } from './getURL'
+import { pageTitle, SITE_NAME } from './site'
 
-const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null) => {
-  const serverUrl = getServerSideURL()
+/** Image OG du document (taille « og » si disponible), absolue ; aucune sinon. */
+const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null): string | undefined => {
+  if (!image || typeof image !== 'object') return undefined
 
-  let url = serverUrl + '/website-template-OG.webp'
+  const mediaUrl = image.sizes?.og?.url || image.url
+  if (!mediaUrl) return undefined
 
-  if (image && typeof image === 'object' && 'url' in image) {
-    // URL absolue (R2) ou relative (stockage disque en dev)
-    const mediaUrl = image.sizes?.og?.url || image.url
-    if (mediaUrl) url = /^https?:\/\//.test(mediaUrl) ? mediaUrl : serverUrl + mediaUrl
-  }
-
-  return url
+  // URL absolue (R2) ou relative (stockage disque en dev)
+  return /^https?:\/\//.test(mediaUrl) ? mediaUrl : getServerSideURL() + mediaUrl
 }
 
 export const generateMeta = async (args: {
@@ -24,25 +22,22 @@ export const generateMeta = async (args: {
 }): Promise<Metadata> => {
   const { doc } = args
 
-  const ogImage = getImageURL(doc?.meta?.image)
+  // Articles migrés : pas d'image SEO dédiée, l'image principale en tient lieu
+  const heroImage = doc && 'heroImage' in doc ? doc.heroImage : null
+  const ogImage = getImageURL(doc?.meta?.image || heroImage)
 
-  const title = doc?.meta?.title
-    ? doc?.meta?.title + ' | Payload Website Template'
-    : 'Payload Website Template'
+  // meta.title est déjà suffixé par le plugin SEO (generateTitle) ; sinon on suffixe ici
+  // Accueil : « CSLE - <description> » sauf titre SEO saisi explicitement
+  const rawTitle = doc?.slug === 'home' ? doc?.meta?.title : doc?.meta?.title || doc?.title
+  const title = rawTitle?.endsWith(` - ${SITE_NAME}`) ? rawTitle : pageTitle(rawTitle)
 
   return {
     description: doc?.meta?.description,
     openGraph: mergeOpenGraph({
       description: doc?.meta?.description || '',
-      images: ogImage
-        ? [
-            {
-              url: ogImage,
-            },
-          ]
-        : undefined,
+      images: ogImage ? [{ url: ogImage }] : undefined,
       title,
-      url: Array.isArray(doc?.slug) ? doc?.slug.join('/') : '/',
+      url: !doc?.slug || doc.slug === 'home' ? '/' : `/${doc.slug}`,
     }),
     title,
   }

@@ -75,9 +75,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data, categories }) 
         <div className={`flex justify-between items-center ${isSticky ? 'py-4' : 'py-8'} transition-all duration-300`}>
           <Link href="/" className="relative z-50">
             <Logo
-              loading="eager"
-              priority="high"
-              className={`transition-all duration-300 ${isSticky ? 'h-8' : 'h-10'} w-auto invert dark:invert-0`}
+              className={`text-foreground transition-all duration-300 ${isSticky ? 'text-2xl' : 'text-3xl'}`}
             />
           </Link>
 

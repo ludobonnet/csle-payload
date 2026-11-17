@@ -7,6 +7,7 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
+import { pageTitle } from '@/utilities/site'
 
 // Use dynamic rendering to avoid Neon memory issues during SSG
 export const dynamic = 'force-dynamic'
@@ -58,6 +59,6 @@ export default async function Page() {
 
 export function generateMetadata(): Metadata {
   return {
-    title: `Payload Website Template Posts`,
+    title: pageTitle('Tous les articles'),
   }
 }

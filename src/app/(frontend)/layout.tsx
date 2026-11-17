@@ -29,6 +29,7 @@ import { draftMode } from 'next/headers'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
+import { pageTitle, SITE_DESCRIPTION } from '@/utilities/site'
 
 // Tout le site public est rendu à la requête (trafic faible, Cloudflare devant) :
 // le build ne touche jamais la base, et aucune page n'est figée sans ses données
@@ -65,8 +66,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 export const metadata: Metadata = {
   metadataBase: new URL(getServerSideURL()),
   openGraph: mergeOpenGraph(),
+  title: pageTitle(),
+  description: SITE_DESCRIPTION,
   twitter: {
     card: 'summary_large_image',
-    creator: '@payloadcms',
   },
 }
