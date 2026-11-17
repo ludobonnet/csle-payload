@@ -79,7 +79,7 @@ export async function PostNavigation({ currentPost }: PostNavigationProps) {
                             : undefined
                       }
                       fill
-                      className="object-cover"
+                      size="80px"
                     />
                   </div>
                 )}
@@ -120,7 +120,7 @@ export async function PostNavigation({ currentPost }: PostNavigationProps) {
                             : undefined
                       }
                       fill
-                      className="object-cover"
+                      size="80px"
                     />
                   </div>
                 )}

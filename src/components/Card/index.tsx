@@ -52,7 +52,8 @@ export const Card: React.FC<{
           <Media
             resource={displayImage}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            size="(max-width: 768px) 100vw, 33vw"
+            className="h-full transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-caption">

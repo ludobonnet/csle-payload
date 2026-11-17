@@ -34,7 +34,7 @@ export const AuthorBio: React.FC<AuthorBioProps> = ({ author }) => {
             <Media
               resource={avatar as MediaType}
               fill
-              className="object-cover"
+              size="64px"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">

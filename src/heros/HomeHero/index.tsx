@@ -22,7 +22,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({ post }) => {
             resource={heroImage}
             fill
             priority
-            className="object-cover"
+            size="100vw"
           />
         ) : (
           <div className="w-full h-full bg-muted" />

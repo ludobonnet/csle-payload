@@ -16,15 +16,19 @@ import { CodeBlock, CodeBlockProps } from '@/blocks/Code/Component'
 import type {
   BannerBlock as BannerBlockProps,
   CallToActionBlock as CTABlockProps,
+  EmbedBlock as EmbedBlockProps,
   MediaBlock as MediaBlockProps,
 } from '@/payload-types'
 import { BannerBlock } from '@/blocks/Banner/Component'
+import { EmbedBlock } from '@/blocks/Embed/Component'
 import { CallToActionBlock } from '@/blocks/CallToAction/Component'
 import { cn } from '@/utilities/ui'
 
 type NodeTypes =
   | DefaultNodeTypes
-  | SerializedBlockNode<CTABlockProps | MediaBlockProps | BannerBlockProps | CodeBlockProps>
+  | SerializedBlockNode<
+      CTABlockProps | MediaBlockProps | BannerBlockProps | CodeBlockProps | EmbedBlockProps
+    >
 
 const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   const { value } = linkNode.fields.doc!
@@ -48,7 +52,13 @@ const jsxConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) 
         captionClassName="mx-auto max-w-[48rem]"
         enableGutter={false}
         disableInnerContainer={true}
+        // Colonne d'article : 52rem max (832 px)
+        size="(max-width: 832px) 100vw, 832px"
       />
+    ),
+    // Vidéos YouTube, Vimeo, Dailymotion (198 reprises de WordPress)
+    embed: ({ node }) => (
+      <EmbedBlock className="col-start-1 col-span-3 my-8" {...node.fields} disableInnerContainer />
     ),
     code: ({ node }) => <CodeBlock className="col-start-2" {...node.fields} />,
     cta: ({ node }) => <CallToActionBlock {...node.fields} />,

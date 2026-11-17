@@ -39,7 +39,8 @@ export const FeaturedCard: React.FC<{
           <Media
             resource={displayImage}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            size="(max-width: 1024px) 100vw, 66vw"
+            className="h-full transition-transform duration-500 group-hover:scale-[1.02]"
           />
         ) : (
           <div className="w-full h-full bg-muted" />
