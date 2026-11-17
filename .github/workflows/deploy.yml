@@ -1,11 +1,12 @@
-# Déploiement de csle.fr sur le VPS LSAN (prod seule).
-# push main → contrôles → build standalone → rsync → bascule → sonde.
+# Déploiement de csle.fr sur le VPS LSAN (prod seule), sur le modèle de LSAN.
+# push main → contrôles → migrations (tunnel SSH, rôle csle_owner) → build → rsync → bascule → sonde.
 #
-# La CI n'a AUCUN accès à la base : le site public est rendu à la requête et les
-# migrations s'appliquent au démarrage du service (prodMigrations).
+# Seul le job « migrate » touche la base. Le build n'en a pas besoin (site rendu à la
+# requête) et le service tourne avec csle_app, sans aucun droit sur le schéma.
 #
 # Environnement GitHub « prod » :
-#   secrets : SSH_KEY (clé privée de csle-deploy), SSH_KNOWN_HOSTS, SSH_HOST
+#   secrets : SSH_KEY (clé privée de csle-deploy), SSH_KNOWN_HOSTS, SSH_HOST,
+#             DATABASE_URL_OWNER (csle_owner, via le TUNNEL : 127.0.0.1:55432, jamais 5432)
 #   variables : SITE_URL (https://csle.fr), MEDIA_PUBLIC_BASE_URL (https://images.csle.fr)
 name: Déploiement
 
@@ -24,7 +25,8 @@ permissions:
 env:
   NODE_VERSION: '24'
   RELEASES: /srv/csle/front/releases
-  PORT: '3005'
+  PORT: '3020'
+  PG_TUNNEL_PORT: '55432'
 
 jobs:
   check:
@@ -47,8 +49,55 @@ jobs:
       # Tests sans base : convertisseurs de migration
       - run: pnpm exec vitest run scripts
 
-  deploy:
+  migrate:
     needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: prod
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 10
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Vérifie le secret du propriétaire
+        env:
+          DATABASE_URL_OWNER: ${{ secrets.DATABASE_URL_OWNER }}
+        run: |
+          case "$DATABASE_URL_OWNER" in
+            *"@127.0.0.1:${PG_TUNNEL_PORT}/"*) ;;
+            *) echo "::error title=DATABASE_URL_OWNER::absent ou ne visant pas le tunnel (127.0.0.1:${PG_TUNNEL_PORT})"; exit 1 ;;
+          esac
+
+      - uses: ./.github/actions/ssh-setup
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          host: ${{ secrets.SSH_HOST }}
+
+      - uses: ./.github/actions/pg-tunnel
+        with:
+          port: ${{ env.PG_TUNNEL_PORT }}
+
+      - name: Migrations Payload
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_OWNER }}
+          PAYLOAD_SECRET: migrate-only-not-a-secret
+        run: pnpm payload migrate
+
+      - name: Ferme le tunnel
+        if: always()
+        run: pkill -f "\-L ${PG_TUNNEL_PORT}:127\.0\.0\.1:5432" || true
+
+  deploy:
+    needs: [check, migrate]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: prod
@@ -110,27 +159,11 @@ jobs:
           find "$out" -maxdepth 1 -name '.env*' -print -delete
           echo "artefact : $(du -sh "$out" | cut -f1)"
 
-      - name: Configure SSH
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-        run: |
-          set -euo pipefail
-          umask 077
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          cat > ~/.ssh/config <<EOF
-          Host vps
-            HostName $SSH_HOST
-            User csle-deploy
-            IdentityFile ~/.ssh/id_deploy
-            IdentitiesOnly yes
-            StrictHostKeyChecking yes
-            ServerAliveInterval 30
-          EOF
-          ssh vps true
+      - uses: ./.github/actions/ssh-setup
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          host: ${{ secrets.SSH_HOST }}
 
       - name: Pousse la release
         run: |

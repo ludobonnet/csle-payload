@@ -3,6 +3,8 @@
 > Plan arrêté le 2026-11-17. Référence infra : `LSAN/Sources/lsan-monorepo-develop/docs/runbook-installation-vps-lsan.md`
 > (variante native : Node 24 + systemd + Cloudflare Tunnel, sans Docker). csle y est un **locataire isolé** :
 > ni code, ni base, ni user, ni jeton partagés avec LSAN — seuls le serveur Postgres, `cloudflared` et la machine sont communs.
+> Accès admin : alias SSH `Bpro-LSA` (utilisateur `ludo`, sudo). État au 2026-11-17 : Debian 13, Node 24.22, Postgres 17.12,
+> `cloudflared` actif, 5 Go de RAM libres, 78 Go de disque libres, 62 connexions Postgres ouvertes sur 100.
 
 ## Décisions
 
@@ -11,14 +13,14 @@
 | Stack | Next.js 15 + Payload CMS 3 (admin sur `/admin`, même process) — plus de WordPress ni de PHP |
 | Environnements | **Prod seule** (pas de préprod) |
 | Runtime | Node 24 (NodeSource, celui du VPS), service systemd `csle-front`, user `csle-front` (nologin) |
-| Port | `127.0.0.1:3005` (3000–3004 pris par LSAN) |
+| Port | `127.0.0.1:3020` (vérifié le 2026-11-17 : 3000–3005 et 3100–3101 pris par LSAN, 3005 = `lsan-mcp-opendata`) |
 | Arborescence | `/srv/csle/front/{releases/<sha>,current,cache}` |
 | Déploiement | GitHub Actions (`ludobonnet/csle-payload`) → `next build` standalone → rsync → symlink `current` → restart |
 | User de déploiement | **`csle-deploy`** dédié (clé SSH propre, sudoers limité à `systemctl restart csle-front`) — pas le `deploy` de LSAN |
-| Base | Base **`csle`** sur le Postgres 17 partagé ; **rôle unique `csle`, propriétaire de cette seule base** (pool max 5). `REVOKE CONNECT … FROM PUBLIC` : ni LSAN ne voit `csle`, ni `csle` ne voit LSAN |
-| Schéma | **Migrations uniquement** (`src/migrations`, `push: false`) ; en prod, appliquées **au démarrage du service** (`prodMigrations`) — la CI n'a aucun accès à la base, d'où le rôle propriétaire |
+| Base | Base **`csle`** sur le Postgres 17 partagé, **modèle LSAN** : `csle_owner` (propriétaire, migrations via la CI uniquement) et `csle_app` (runtime, DML seul, pool max 5). `REVOKE CONNECT … FROM PUBLIC`. Script : `ops/postgres-setup.sql` |
+| Schéma | **Migrations uniquement** (`src/migrations`, `push: false`) ; en prod, job CI `migrate` : tunnel SSH → `pnpm payload migrate` en `csle_owner`. Le build, lui, ne touche pas la base |
 | Médias | Bucket R2 **`csle-media`** (jeton dédié), domaine `images.csle.fr`, via `@payloadcms/storage-s3` (`src/plugins/mediaStorage.ts`) |
-| Ingress | Tunnel Cloudflare : `csle.fr` + `www.csle.fr` → `localhost:3005` ; **Cloudflare Access sur `/admin*`** (OTP e-mail) |
+| Ingress | Tunnel Cloudflare : `csle.fr` + `www.csle.fr` → `localhost:3020` ; **Cloudflare Access sur `/admin*`** (OTP e-mail) |
 | Secrets | `/etc/csle/front.env` (640 root:csle-front) |
 | Sauvegardes | `pg_dump` chiffré de `csle` → R2, rôle dédié, test de restauration avant bascule |
 
@@ -68,7 +70,7 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
 - [x] Nettoyage : `docker-compose.yml`, `Dockerfile` supprimés ; `README.md` et `CLAUDE.md` à jour.
 - [x] Tests : convertisseurs inclus dans `pnpm test:int` (29), e2e des parcours publics (6).
 - [x] Workflow `.github/workflows/deploy.yml` : contrôles (lint, typage, tests) → build sans base → rsync → `deploy.sh` → sonde. Fichiers serveur dans `ops/` (`csle-deploy.sh`, `csle-front.service`, `front.env.example`).
-- [x] Migrations au démarrage vérifiées : base vide → schéma créé (67 tables) ; base existante → rien rejoué.
+- [x] Deux rôles répétés en local (Postgres 17 neuf + `ops/postgres-setup.sql`) : migration en `csle_owner` ; restauration du dump local ; site, recherche, API et écritures admin (versions comprises) en `csle_app` ; DDL refusé (`permission denied for schema public`, `must be owner of table`).
 
 ### Contraintes de build constatées
 
@@ -89,16 +91,16 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
 - [ ] Users `csle-front` (nologin) et `csle-deploy` ; `/srv/csle/front/{releases,cache}` avec les droits du runbook §2.2
       (`releases` : csle-deploy:csle-front 750 ; `cache` : csle-front 750). `ops/csle-deploy.sh` → `/srv/csle/deploy.sh` (csle-deploy, 750).
 - [ ] Sudoers `/etc/sudoers.d/csle-deploy` : `csle-deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart csle-front` (valider avec `visudo -cf`).
-- [ ] Clé SSH dédiée `csle-deploy` ; environnement GitHub `prod` : secrets `SSH_KEY`, `SSH_KNOWN_HOSTS`, `SSH_HOST`, variables `SITE_URL`, `MEDIA_PUBLIC_BASE_URL`.
-- [ ] Postgres : `CREATE ROLE csle LOGIN …`, `CREATE DATABASE csle OWNER csle`, `REVOKE CONNECT ON DATABASE csle FROM PUBLIC`, `GRANT CONNECT … TO csle`, matrice CONNECT diagonale revérifiée (runbook §3.4).
+- [ ] Clé SSH dédiée `csle-deploy` ; environnement GitHub `prod` : secrets `SSH_KEY`, `SSH_KNOWN_HOSTS`, `SSH_HOST`, `DATABASE_URL_OWNER` (via le tunnel, `127.0.0.1:55432`), variables `SITE_URL`, `MEDIA_PUBLIC_BASE_URL`.
+- [ ] Postgres : mots de passe générés sur le serveur (`/etc/csle/pg-credentials.env`, 600 root), puis `ops/postgres-setup.sql` **avant** toute restauration ; matrice CONNECT diagonale revérifiée sur `lsan`, `lsan_pp`, `umami`, `csle` (runbook §3.4).
 - [ ] `/etc/csle/front.env` (d'après `ops/front.env.example`, 640 root:csle-front) ; unit `ops/csle-front.service` → `/etc/systemd/system/`.
 - [ ] Bucket R2 `csle-media` + domaine `images.csle.fr` + jeton dédié ; copie de `public/media` (905 Mo, 9 613 fichiers) avec `rclone`, noms conservés, à la racine du bucket.
-- [ ] Tunnel : hostnames `csle.fr`, `www.csle.fr` → `http://localhost:3005` ; redirection apex/www ; Access sur `csle.fr/admin*` (Ludo, Sandrine).
+- [ ] Tunnel : hostnames `csle.fr`, `www.csle.fr` → `http://localhost:3020` ; redirection apex/www ; Access sur `csle.fr/admin*` (Ludo, Sandrine).
 - [ ] Sauvegarde quotidienne de `csle` + test de restauration.
 
 ## Lot 3 — Bascule
 
-- [ ] `pg_dump` de la **base locale** → restauration dans `csle` (propriétaire `csle`) sur le VPS **avant** le premier démarrage du service ; `payload_migrations` doit contenir la migration initiale (sinon le démarrage tenterait de recréer les tables).
+- [ ] `pg_dump` de la **base locale** (`--no-owner --no-acl -Fc`) → `pg_restore` en **`csle_owner`** dans `csle` ; contrôle : toutes les tables appartiennent à `csle_owner`, `payload_migrations` contient la migration initiale (procédure répétée en local le 2026-11-17).
 - [ ] Recette via le tunnel (articles, catégories, images R2, admin, recherche, upload d'une image depuis l'admin).
 - [ ] DNS `csle.fr` → tunnel. Suivi Search Console (404).
 - [ ] Archivage puis suppression de `sources/wp` et de la base Neon.

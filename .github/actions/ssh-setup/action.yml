@@ -1,0 +1,38 @@
+name: ssh-setup
+description: Installe la clé de déploiement et l'alias SSH `vps` (utilisateur csle-deploy).
+
+inputs:
+  key:
+    description: Clé privée de csle-deploy.
+    required: true
+  known_hosts:
+    description: Empreinte du serveur. Elle vient du secret, jamais du réseau.
+    required: true
+  host:
+    description: Adresse du VPS.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SSH_KEY: ${{ inputs.key }}
+        SSH_KNOWN_HOSTS: ${{ inputs.known_hosts }}
+        SSH_HOST: ${{ inputs.host }}
+      run: |
+        set -euo pipefail
+        umask 077
+        mkdir -p ~/.ssh
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+        printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+        cat > ~/.ssh/config <<EOF
+        Host vps
+          HostName $SSH_HOST
+          User csle-deploy
+          IdentityFile ~/.ssh/id_deploy
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+          ServerAliveInterval 30
+        EOF
+        ssh vps true

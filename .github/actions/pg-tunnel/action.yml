@@ -1,0 +1,27 @@
+name: pg-tunnel
+description: Ouvre un tunnel SSH vers le Postgres du VPS, qui n'écoute qu'en loopback.
+
+inputs:
+  port:
+    description: Port local du tunnel.
+    required: false
+    default: '55432'
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        PORT: ${{ inputs.port }}
+      run: |
+        set -euo pipefail
+        ssh -f -N -o ExitOnForwardFailure=yes -L "${PORT}:127.0.0.1:5432" vps
+        for _ in $(seq 1 15); do
+          if timeout 2 bash -c "</dev/tcp/127.0.0.1/${PORT}" 2>/dev/null; then
+            echo "tunnel ouvert sur 127.0.0.1:${PORT}"
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "tunnel injoignable" >&2
+        exit 1

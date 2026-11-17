@@ -4,7 +4,7 @@
 # Installé en /srv/csle/deploy.sh (csle-deploy:csle-deploy, 750). Appelé par la CI via SSH.
 # Rollback : /srv/csle/deploy.sh <sha-précédent>
 #
-# Les migrations Payload s'appliquent au démarrage du service (prodMigrations).
+# Les migrations sont jouées avant, par la CI (job « migrate », rôle csle_owner).
 #
 set -euo pipefail
 SHA="${1:?usage: deploy.sh <sha>}"
