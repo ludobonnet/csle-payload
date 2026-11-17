@@ -1,21 +1,15 @@
 import { HeaderClient } from './Component.client'
 import { getCachedGlobal } from '@/utilities/getGlobals'
+import { getRubriques } from '@/utilities/getRubriques'
 import React from 'react'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 
 import type { Header } from '@/payload-types'
 
 export async function Header() {
-  const headerData: Header = await getCachedGlobal('header', 1)()
+  const [headerData, rubriques] = await Promise.all([
+    getCachedGlobal('header', 1)() as Promise<Header>,
+    getRubriques(),
+  ])
 
-  // Fetch all categories for the navigation
-  const payload = await getPayload({ config })
-  const categoriesResult = await payload.find({
-    collection: 'categories',
-    limit: 100,
-    sort: 'title',
-  })
-
-  return <HeaderClient data={headerData} categories={categoriesResult.docs} />
+  return <HeaderClient data={headerData} rubriques={rubriques} />
 }

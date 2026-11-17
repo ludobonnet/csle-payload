@@ -1,80 +1,82 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
-import type { Category } from '@/payload-types'
 
-interface CategoryDropdownProps {
-  categories: Category[]
-}
+import type { Rubrique } from '@/utilities/getRubriques'
+import { cn } from '@/utilities/ui'
+import { navLinkClass } from './navLinkClass'
 
-export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({ categories }) => {
+/** Menu « Plus » : les rubriques qui ne tiennent pas dans l'en-tête. Clic ou clavier, pas de survol. */
+export const CategoryDropdown: React.FC<{ rubriques: Rubrique[]; pathname: string }> = ({
+  rubriques,
+  pathname,
+}) => {
   // Ouvert « pour » une page donnée : se referme de lui-même au changement de route
   const [openPath, setOpenPath] = useState<string | null>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const pathname = usePathname()
   const isOpen = openPath === pathname
-  const setIsOpen = (open: boolean) => setOpenPath(open ? pathname : null)
+  const ref = useRef<HTMLDivElement>(null)
+  const menuId = useId()
+  const active = rubriques.some((rubrique) => `/${rubrique.slug}` === pathname)
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenPath(null)
-      }
+    if (!isOpen) return
+    const onPointer = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpenPath(null)
     }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenPath(null)
+    }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
     }
   }, [isOpen])
 
-  // Check if we're on a category page
-  const currentCategory = categories.find((cat) => `/${cat.slug}` === pathname)
-
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative flex" ref={ref}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => setIsOpen(true)}
-        className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors py-2"
+        type="button"
+        onClick={() => setOpenPath(isOpen ? null : pathname)}
+        className={cn(navLinkClass(active), 'gap-1')}
         aria-expanded={isOpen}
-        aria-haspopup="true"
+        aria-controls={menuId}
       >
-        Catégories
+        Plus
         <ChevronDown
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={cn('size-4 transition-transform duration-200', isOpen && 'rotate-180')}
+          strokeWidth={2}
         />
       </button>
 
-      {/* Dropdown menu */}
       {isOpen && (
-        <div
-          className="absolute top-full left-0 mt-2 w-56 bg-card border border-border rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50"
-          onMouseLeave={() => setIsOpen(false)}
+        <ul
+          id={menuId}
+          className="absolute right-0 top-full z-50 min-w-52 border border-line border-t-[0.3125rem] border-t-sauge bg-paper py-2 shadow-[0_12px_32px_-12px_rgb(42_36_32/0.25)]"
         >
-          <nav className="py-2">
-            {categories.map((category) => {
-              const isActive = currentCategory?.id === category.id
-              return (
+          {rubriques.map((rubrique) => {
+            const href = `/${rubrique.slug}`
+            const current = pathname === href
+            return (
+              <li key={rubrique.id}>
                 <Link
-                  key={category.id}
-                  href={`/${category.slug}`}
-                  className={`block px-4 py-2.5 text-sm transition-colors ${
-                    isActive
-                      ? 'bg-accent text-accent-foreground font-medium'
-                      : 'text-foreground hover:bg-accent/50 hover:text-primary'
-                  }`}
+                  href={href}
+                  aria-current={current ? 'page' : undefined}
+                  className={cn(
+                    'flex items-baseline justify-between gap-6 px-4 py-2 font-sans text-[0.9375rem] transition-colors hover:bg-wash',
+                    current ? 'font-semibold text-sauge-ink' : 'text-ink',
+                  )}
                 >
-                  {category.title}
+                  {rubrique.title}
+                  <span className="meta tabular-nums">{rubrique.count}</span>
                 </Link>
-              )
-            })}
-          </nav>
-        </div>
+              </li>
+            )
+          })}
+        </ul>
       )}
     </div>
   )

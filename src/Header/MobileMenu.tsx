@@ -1,129 +1,134 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Menu, X } from 'lucide-react'
-import type { Header as HeaderType, Category } from '@/payload-types'
+
+import type { Header as HeaderType } from '@/payload-types'
+import type { Rubrique } from '@/utilities/getRubriques'
 import { CMSLink } from '@/components/Link'
+import { cn } from '@/utilities/ui'
 
 interface MobileMenuProps {
   data: HeaderType
-  categories: Category[]
+  rubriques: Rubrique[]
+  pathname: string
   isOpen: boolean
   onToggle: () => void
 }
 
-export const MobileMenu: React.FC<MobileMenuProps> = ({ data, categories, isOpen, onToggle }) => {
+/**
+ * Menu mobile : un panneau plein écran sous l'en-tête, qui liste toutes les rubriques
+ * en grand, comme un sommaire de magazine.
+ */
+export const MobileMenu: React.FC<MobileMenuProps> = ({
+  data,
+  rubriques,
+  pathname,
+  isOpen,
+  onToggle,
+}) => {
   const navItems = data?.navItems || []
-  const pathname = usePathname()
-  const currentCategory = categories.find((cat) => `/${cat.slug}` === pathname)
+
+  // Page figée derrière le panneau ; Échap referme
+  useEffect(() => {
+    if (!isOpen) return
+    document.body.style.overflow = 'hidden'
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onToggle()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [isOpen, onToggle])
 
   return (
     <>
-      {/* Hamburger button */}
       <button
+        type="button"
         onClick={onToggle}
-        className="md:hidden p-2 -mr-2 text-foreground hover:text-primary transition-colors"
-        aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+        className="-mr-2 flex h-10 items-center gap-2 px-2 font-sans font-condensed text-[0.9375rem] font-semibold text-ink"
         aria-expanded={isOpen}
+        aria-controls="menu-mobile"
       >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {isOpen ? 'Fermer' : 'Menu'}
+        <span aria-hidden="true" className="relative block h-3 w-5">
+          <span
+            className={cn(
+              'absolute left-0 h-0.5 w-5 bg-current transition-transform duration-200',
+              isOpen ? 'top-[5px] rotate-45' : 'top-0',
+            )}
+          />
+          <span
+            className={cn(
+              'absolute left-0 h-0.5 w-5 bg-current transition-transform duration-200',
+              isOpen ? 'top-[5px] -rotate-45' : 'top-[10px]',
+            )}
+          />
+        </span>
       </button>
 
-      {/* Mobile menu overlay */}
-      {isOpen && (
-        <>
-          {/* Backdrop */}
+      {/* Portail sur body : le backdrop-filter de l'en-tête enfermerait un enfant `fixed` dans ses 64px */}
+      {isOpen &&
+        createPortal(
           <div
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
-            onClick={onToggle}
-            aria-hidden="true"
-          />
-
-          {/* Menu panel */}
-          <div className="fixed top-0 right-0 h-full w-[280px] max-w-[80vw] bg-card border-l border-border z-50 md:hidden animate-in slide-in-from-right duration-300">
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="flex justify-end p-4 border-b border-border">
-                <button
-                  onClick={onToggle}
-                  className="p-2 text-foreground hover:text-primary transition-colors"
-                  aria-label="Fermer le menu"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Navigation */}
-              <nav className="flex-1 overflow-y-auto p-6">
-                <ul className="space-y-4">
-                  {navItems.map(({ link }, i) => (
-                    <li key={i} onClick={onToggle}>
-                      <CMSLink
-                        {...link}
-                        appearance="link"
-                        className="block text-h4 font-display text-foreground hover:text-primary transition-colors py-2"
-                      />
+            id="menu-mobile"
+            className="fixed inset-x-0 bottom-0 top-16 z-30 overflow-y-auto bg-paper animate-in fade-in duration-200"
+          >
+            <nav aria-label="Rubriques" className="container py-8">
+              <p className="filet font-sans font-condensed text-[0.9375rem] font-semibold text-ink">
+                Rubriques
+              </p>
+              <ul className="mt-6 divide-y divide-line border-y border-line">
+                {rubriques.map((rubrique) => {
+                  const href = `/${rubrique.slug}`
+                  const current = pathname === href
+                  return (
+                    <li key={rubrique.id}>
+                      <Link
+                        href={href}
+                        onClick={onToggle}
+                        aria-current={current ? 'page' : undefined}
+                        className={cn(
+                          'flex items-baseline justify-between py-3 font-serif text-[1.75rem] leading-tight',
+                          current ? 'text-sauge-ink' : 'text-ink',
+                        )}
+                      >
+                        {rubrique.title}
+                        <span className="meta tabular-nums">{rubrique.count}</span>
+                      </Link>
                     </li>
-                  ))}
-                </ul>
+                  )
+                })}
+              </ul>
 
-                {/* Categories section in mobile menu */}
-                <div className="mt-8 pt-6 border-t border-border">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                    Catégories
-                  </h3>
-                  <ul className="space-y-3">
-                    {categories.map((category) => {
-                      const isActive = currentCategory?.id === category.id
-                      return (
-                        <li key={category.id} onClick={onToggle}>
-                          <Link
-                            href={`/${category.slug}`}
-                            className={`block text-body transition-colors py-1 ${
-                              isActive
-                                ? 'text-primary font-medium'
-                                : 'text-foreground hover:text-primary'
-                            }`}
-                          >
-                            {category.title}
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-
-                {/* Search link in mobile menu */}
-                <div className="mt-8 pt-6 border-t border-border">
-                  <Link
-                    href="/search"
-                    className="flex items-center gap-3 text-body text-foreground hover:text-primary transition-colors"
-                    onClick={onToggle}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="11" cy="11" r="8" />
-                      <path d="m21 21-4.3-4.3" />
-                    </svg>
-                    Rechercher
+              <ul className="mt-8 flex flex-col gap-3 font-sans text-body">
+                {navItems.map(({ link }, i) => (
+                  <li key={i} onClick={onToggle}>
+                    <CMSLink {...link} className="text-ink hover:text-sauge-ink" />
+                  </li>
+                ))}
+                <li>
+                  <Link href="/search" onClick={onToggle} className="text-ink hover:text-sauge-ink">
+                    Rechercher un article
                   </Link>
-                </div>
-              </nav>
-            </div>
-          </div>
-        </>
-      )}
+                </li>
+                <li>
+                  <Link
+                    href="/contact"
+                    onClick={onToggle}
+                    className="text-ink hover:text-sauge-ink"
+                  >
+                    Nous écrire
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>,
+          document.body,
+        )}
     </>
   )
 }

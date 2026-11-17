@@ -1,10 +1,11 @@
 'use client'
-import { useHeaderTheme } from '@/providers/HeaderTheme'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
+import { SearchIcon } from 'lucide-react'
 
-import type { Header, Category } from '@/payload-types'
+import type { Header } from '@/payload-types'
+import type { Rubrique } from '@/utilities/getRubriques'
 
 import { Logo } from '@/components/Logo/Logo'
 import { HeaderNav } from './Nav'
@@ -12,89 +13,64 @@ import { MobileMenu } from './MobileMenu'
 
 interface HeaderClientProps {
   data: Header
-  categories: Category[]
+  rubriques: Rubrique[]
 }
 
-export const HeaderClient: React.FC<HeaderClientProps> = ({ data, categories }) => {
-  const [isSticky, setIsSticky] = useState(false)
-  const { headerTheme, setHeaderTheme } = useHeaderTheme()
+/**
+ * En-tête collant, une seule ligne : logo, rubriques, recherche. Pas de calcul au défilement :
+ * `position: sticky` suffit et ne fait pas sauter la page.
+ */
+export const HeaderClient: React.FC<HeaderClientProps> = ({ data, rubriques }) => {
   const pathname = usePathname()
   // Menu mobile ouvert « pour » une page donnée : il se referme de lui-même au changement de route
   const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null)
   const isMobileMenuOpen = mobileMenuPath === pathname
-  const theme = headerTheme
-
-  // Thème d'en-tête remis à zéro à chaque page (contexte partagé, donc système externe)
-  useEffect(() => {
-    setHeaderTheme(null)
-  }, [pathname, setHeaderTheme])
-
-  // Sticky header on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY
-      setIsSticky(scrollTop > 100)
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  // Prevent body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isMobileMenuOpen])
 
   const toggleMobileMenu = useCallback(() => {
     setMobileMenuPath((open) => (open === pathname ? null : pathname))
   }, [pathname])
 
   return (
-    <header
-      className={`
-        w-full z-50 transition-all duration-300
-        ${
-          isSticky
-            ? 'fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-md border-b border-border shadow-sm'
-            : 'relative'
-        }
-      `}
-      {...(theme ? { 'data-theme': theme } : {})}
-    >
-      <div className="container">
-        <div
-          className={`flex justify-between items-center ${isSticky ? 'py-4' : 'py-8'} transition-all duration-300`}
-        >
-          <Link href="/" className="relative z-50">
-            <Logo
-              className={`text-foreground transition-all duration-300 ${isSticky ? 'text-2xl' : 'text-3xl'}`}
-            />
+    <header className="sticky top-0 z-40 w-full border-b border-line bg-paper/92 backdrop-blur-md supports-[backdrop-filter]:bg-paper/85">
+      <a
+        href="#contenu"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:bg-paper focus:px-3 focus:py-2"
+      >
+        Aller au contenu
+      </a>
+      <div className="container flex h-16 items-center justify-between gap-8 lg:h-[4.5rem]">
+        <Link href="/" className="shrink-0 py-2" aria-label="csle, retour à l'accueil">
+          <Logo className="h-7 lg:h-8" title="csle" />
+        </Link>
+
+        <div className="hidden lg:flex lg:items-stretch lg:self-stretch lg:gap-8">
+          <HeaderNav data={data} rubriques={rubriques} pathname={pathname} />
+          <Link
+            href="/search"
+            className="flex items-center text-ink hover:text-sauge-ink transition-colors"
+            aria-label="Rechercher"
+          >
+            <SearchIcon className="size-5" strokeWidth={1.75} />
           </Link>
+        </div>
 
-          {/* Desktop navigation */}
-          <div className="hidden md:block">
-            <HeaderNav data={data} categories={categories} />
-          </div>
-
-          {/* Mobile menu */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <Link
+            href="/search"
+            className="p-2 text-ink hover:text-sauge-ink transition-colors"
+            aria-label="Rechercher"
+          >
+            <SearchIcon className="size-5" strokeWidth={1.75} />
+          </Link>
           <MobileMenu
             data={data}
-            categories={categories}
+            rubriques={rubriques}
+            pathname={pathname}
             isOpen={isMobileMenuOpen}
             onToggle={toggleMobileMenu}
           />
         </div>
       </div>
-
-      {/* Spacer when header is fixed to prevent content jump */}
-      {isSticky && <div className="h-[72px]" aria-hidden="true" />}
     </header>
   )
 }

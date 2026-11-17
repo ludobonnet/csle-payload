@@ -1,101 +1,107 @@
 /** @type {import('tailwindcss').Config} */
+
+const serif = "var(--font-newsreader), 'Iowan Old Style', Georgia, serif"
+const sans = 'var(--font-archivo), system-ui, sans-serif'
+
 const config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['var(--font-playfair)', 'Georgia', 'serif'],
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: [serif],
+        serif: [serif],
+        sans: [sans],
       },
+      // Échelle en quarte (×1,333) à partir de 18px, fluide entre mobile et grand écran.
+      // Les titres sont en Newsreader : interlignage serré, graisse moyenne, l'axe opsz fait le reste.
       fontSize: {
-        // Typography scale from design system
-        display: ['4.5rem', { lineHeight: '1.1', fontWeight: '700' }],
-        h1: ['3rem', { lineHeight: '1.2', fontWeight: '700' }],
-        h2: ['2.25rem', { lineHeight: '1.25', fontWeight: '600' }],
-        h3: ['1.875rem', { lineHeight: '1.3', fontWeight: '600' }],
-        h4: ['1.5rem', { lineHeight: '1.35', fontWeight: '600' }],
-        body: ['1.125rem', { lineHeight: '1.7', fontWeight: '400' }],
-        'body-sm': ['1rem', { lineHeight: '1.6', fontWeight: '400' }],
-        caption: ['0.875rem', { lineHeight: '1.5', fontWeight: '400' }],
-        overline: ['0.75rem', { lineHeight: '1.4', fontWeight: '500', letterSpacing: '0.05em' }],
+        display: [
+          'clamp(2.75rem, 1.6rem + 4.6vw, 5.5rem)',
+          { lineHeight: '1.02', letterSpacing: '-0.02em', fontWeight: '500' },
+        ],
+        h1: [
+          'clamp(2.25rem, 1.55rem + 2.8vw, 3.75rem)',
+          { lineHeight: '1.06', letterSpacing: '-0.015em', fontWeight: '500' },
+        ],
+        h2: [
+          'clamp(1.75rem, 1.35rem + 1.6vw, 2.5rem)',
+          { lineHeight: '1.12', letterSpacing: '-0.01em', fontWeight: '500' },
+        ],
+        h3: ['clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem)', { lineHeight: '1.2', fontWeight: '500' }],
+        h4: ['1.25rem', { lineHeight: '1.25', fontWeight: '500' }],
+        body: ['1.125rem', { lineHeight: '1.6' }],
+        'body-sm': ['1rem', { lineHeight: '1.55' }],
+        caption: ['0.875rem', { lineHeight: '1.45' }],
+        overline: ['0.8125rem', { lineHeight: '1.3', fontWeight: '600', letterSpacing: '0.01em' }],
+      },
+      maxWidth: {
+        measure: 'var(--measure)',
       },
       typography: () => ({
         DEFAULT: {
           css: [
             {
-              '--tw-prose-body': 'var(--foreground)',
-              '--tw-prose-headings': 'var(--foreground)',
-              '--tw-prose-links': 'var(--primary)',
-              '--tw-prose-bold': 'var(--foreground)',
-              '--tw-prose-quotes': 'var(--muted-foreground)',
-              '--tw-prose-quote-borders': 'var(--primary)',
-              '--tw-prose-captions': 'var(--muted-foreground)',
-              '--tw-prose-code': 'var(--foreground)',
-              '--tw-prose-hr': 'var(--border)',
-              maxWidth: '75ch',
-              fontSize: '1.125rem',
-              lineHeight: '1.7',
-              p: {
-                marginTop: '1.25em',
-                marginBottom: '1.25em',
+              '--tw-prose-body': 'var(--ink)',
+              '--tw-prose-headings': 'var(--ink)',
+              '--tw-prose-lead': 'var(--ink-soft)',
+              '--tw-prose-links': 'var(--ink)',
+              '--tw-prose-bold': 'var(--ink)',
+              '--tw-prose-counters': 'var(--sauge-ink)',
+              '--tw-prose-bullets': 'var(--sauge)',
+              '--tw-prose-quotes': 'var(--ink)',
+              '--tw-prose-quote-borders': 'var(--sauge)',
+              '--tw-prose-captions': 'var(--ink-soft)',
+              '--tw-prose-code': 'var(--ink)',
+              '--tw-prose-hr': 'var(--sauge)',
+              '--tw-prose-th-borders': 'var(--line)',
+              '--tw-prose-td-borders': 'var(--line)',
+              maxWidth: 'var(--measure)',
+              fontFamily: serif,
+              fontSize: '1.1875rem',
+              lineHeight: '1.65',
+              p: { marginTop: '1.1em', marginBottom: '1.1em' },
+              'h1, h2, h3, h4': {
+                fontFamily: serif,
+                fontWeight: '500',
+                letterSpacing: '-0.01em',
               },
               h1: {
-                fontFamily: 'var(--font-playfair), Georgia, serif',
-                fontWeight: '700',
-                fontSize: '2.5rem',
+                fontSize: '2.25em',
+                lineHeight: '1.1',
                 marginTop: '1.5em',
                 marginBottom: '0.5em',
               },
               h2: {
-                fontFamily: 'var(--font-playfair), Georgia, serif',
-                fontWeight: '600',
-                fontSize: '1.875rem',
-                marginTop: '1.5em',
-                marginBottom: '0.5em',
+                fontSize: '1.6em',
+                lineHeight: '1.15',
+                marginTop: '1.8em',
+                marginBottom: '0.6em',
               },
               h3: {
-                fontFamily: 'var(--font-playfair), Georgia, serif',
-                fontWeight: '600',
-                fontSize: '1.5rem',
-                marginTop: '1.25em',
+                fontSize: '1.3em',
+                lineHeight: '1.25',
+                marginTop: '1.6em',
                 marginBottom: '0.5em',
               },
-              h4: {
-                fontFamily: 'var(--font-playfair), Georgia, serif',
-                fontWeight: '600',
-                fontSize: '1.25rem',
-              },
+              h4: { fontSize: '1.1em', marginTop: '1.5em', marginBottom: '0.4em' },
+              strong: { fontWeight: '600' },
               blockquote: {
                 fontStyle: 'italic',
-                borderLeftWidth: '3px',
-                borderLeftColor: 'var(--primary)',
-                paddingLeft: '1.5em',
-                marginTop: '1.5em',
-                marginBottom: '1.5em',
+                fontSize: '1.25em',
+                lineHeight: '1.45',
+                borderLeftWidth: '0.4375rem',
+                borderLeftColor: 'var(--sauge)',
+                paddingLeft: '1.25em',
+                marginTop: '1.75em',
+                marginBottom: '1.75em',
               },
-              'blockquote p:first-of-type::before': {
-                content: 'none',
-              },
-              'blockquote p:last-of-type::after': {
-                content: 'none',
-              },
-              hr: {
-                borderColor: 'var(--border)',
-                marginTop: '2em',
-                marginBottom: '2em',
-              },
-              a: {
-                color: 'var(--primary)',
-                textDecoration: 'underline',
-                textUnderlineOffset: '2px',
-                '&:hover': {
-                  color: 'var(--primary-hover)',
-                },
-              },
-              figcaption: {
-                fontSize: '0.875rem',
-                color: 'var(--muted-foreground)',
-                marginTop: '0.75em',
-              },
+              'blockquote p:first-of-type::before': { content: 'none' },
+              'blockquote p:last-of-type::after': { content: 'none' },
+              a: { fontWeight: 'inherit' },
+              'ul > li::marker': { color: 'var(--sauge)' },
+              img: { marginTop: '0', marginBottom: '0' },
+              figure: { marginTop: '2.25em', marginBottom: '2.25em' },
+              figcaption: { marginTop: '0.75em' },
+              code: { fontWeight: '400' },
             },
           ],
         },
@@ -103,15 +109,7 @@ const config = {
           css: [
             {
               fontSize: '1.25rem',
-              h1: {
-                fontSize: '3rem',
-              },
-              h2: {
-                fontSize: '2.25rem',
-              },
-              h3: {
-                fontSize: '1.75rem',
-              },
+              lineHeight: '1.65',
             },
           ],
         },

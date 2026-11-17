@@ -6,38 +6,38 @@ import React from 'react'
 import Script from 'next/script'
 
 // Polices auto-hébergées depuis npm (Fontsource) : aucun appel à Google, ni au build ni chez le visiteur.
-// Sous-ensemble latin (couvre le français, œ compris), fontes variables. Chemins littéraux : next/font les lit au build.
-// Serif éditoriale pour les titres
-const playfair = localFont({
+// Sous-ensemble latin (couvre le français, œ compris). Fichiers « standard » : tous les axes variables.
+// Chemins littéraux : next/font les lit au build.
+
+// Newsreader : serif éditoriale à tailles optiques (opsz 6–72), titres et texte des articles
+const newsreader = localFont({
   src: [
     {
-      path: '../../../node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2',
+      path: '../../../node_modules/@fontsource-variable/newsreader/files/newsreader-latin-standard-normal.woff2',
       style: 'normal',
     },
     {
-      path: '../../../node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-italic.woff2',
+      path: '../../../node_modules/@fontsource-variable/newsreader/files/newsreader-latin-standard-italic.woff2',
       style: 'italic',
     },
   ],
-  weight: '400 900',
-  variable: '--font-playfair',
+  weight: '200 800',
+  variable: '--font-newsreader',
   display: 'swap',
 })
 
-// Sans-serif lisible pour le texte
-const inter = localFont({
+// Archivo : grotesque à largeur variable (wdth 62–125), interface, navigation, métadonnées
+const archivo = localFont({
   src: [
     {
-      path: '../../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2',
+      path: '../../../node_modules/@fontsource-variable/archivo/files/archivo-latin-standard-normal.woff2',
       style: 'normal',
-    },
-    {
-      path: '../../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-italic.woff2',
-      style: 'italic',
     },
   ],
   weight: '100 900',
-  variable: '--font-inter',
+  // Plage de largeur déclarée pour que `font-stretch` (utilitaire .font-condensed) pilote l'axe wdth
+  declarations: [{ prop: 'font-stretch', value: '62% 125%' }],
+  variable: '--font-archivo',
   display: 'swap',
 })
 
@@ -62,7 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { isEnabled } = await draftMode()
 
   return (
-    <html className={cn(playfair.variable, inter.variable)} lang="fr" suppressHydrationWarning>
+    <html className={cn(newsreader.variable, archivo.variable)} lang="fr" suppressHydrationWarning>
       <head>
         <InitTheme />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
@@ -84,7 +84,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           />
 
           <Header />
-          {children}
+          <main id="contenu" className="flex-1">
+            {children}
+          </main>
           <Footer />
         </Providers>
       </body>
