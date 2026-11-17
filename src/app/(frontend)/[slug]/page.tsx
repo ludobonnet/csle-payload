@@ -5,7 +5,7 @@ import configPromise from '@payload-config'
 import { getPayload, type RequiredDataFromCollectionSlug } from 'payload'
 import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
-import { homeStatic } from '@/endpoints/seed/home-static'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/utilities/site'
 
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
@@ -109,6 +109,15 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   return generateMeta({ doc: resolved.data })
 }
 
+/** Accueil sans page « home » en base : derniers articles seuls, méta du site. */
+const HOME_FALLBACK: RequiredDataFromCollectionSlug<'pages'> = {
+  slug: 'home',
+  title: SITE_NAME,
+  hero: { type: 'none' },
+  layout: [],
+  meta: { description: SITE_DESCRIPTION },
+}
+
 const resolveSlug = cache(
   async ({ slug, draft }: { slug: string; draft: boolean }): Promise<ResolvedSlug> => {
     const payload = await getPayload({ config: configPromise })
@@ -135,7 +144,7 @@ const resolveSlug = cache(
         }),
       ])
 
-      const homePage = pageResult.docs[0] || homeStatic
+      const homePage = pageResult.docs[0] || HOME_FALLBACK
       return {
         type: 'home',
         data: {
