@@ -1,6 +1,4 @@
-'use client'
 import { cn } from '@/utilities/ui'
-import useClickableCard from '@/utilities/useClickableCard'
 import Link from 'next/link'
 import React, { Fragment } from 'react'
 
@@ -8,7 +6,10 @@ import type { Post } from '@/payload-types'
 
 import { Media } from '@/components/Media'
 
-export type CardPostData = Pick<Post, 'slug' | 'categories' | 'meta' | 'title' | 'heroImage' | 'publishedAt'>
+export type CardPostData = Pick<
+  Post,
+  'slug' | 'categories' | 'meta' | 'title' | 'heroImage' | 'publishedAt'
+>
 
 export const Card: React.FC<{
   alignItems?: 'center'
@@ -17,7 +18,6 @@ export const Card: React.FC<{
   showCategories?: boolean
   title?: string
 }> = (props) => {
-  const { card, link } = useClickableCard({})
   const { className, doc, showCategories, title: titleFromProps } = props
 
   const { slug, categories, meta, title, heroImage, publishedAt } = doc || {}
@@ -41,10 +41,9 @@ export const Card: React.FC<{
   return (
     <article
       className={cn(
-        'group overflow-hidden bg-card hover:cursor-pointer transition-all duration-300',
+        'group relative overflow-hidden bg-card transition-all duration-300',
         className,
       )}
-      ref={card.ref}
     >
       {/* Image container with 4:3 aspect ratio */}
       <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
@@ -100,7 +99,7 @@ export const Card: React.FC<{
 
         {titleToUse && (
           <h3 className="font-display text-h4 text-foreground group-hover:text-primary transition-colors leading-snug mb-2">
-            <Link href={href} ref={link.ref}>
+            <Link href={href} className="after:absolute after:inset-0 after:content-['']">
               {titleToUse}
             </Link>
           </h3>
@@ -112,9 +111,7 @@ export const Card: React.FC<{
           </p>
         )}
 
-        {formattedDate && (
-          <p className="text-caption text-muted-foreground">{formattedDate}</p>
-        )}
+        {formattedDate && <p className="text-caption text-muted-foreground">{formattedDate}</p>}
       </div>
     </article>
   )

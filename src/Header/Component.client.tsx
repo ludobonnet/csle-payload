@@ -16,22 +16,18 @@ interface HeaderClientProps {
 }
 
 export const HeaderClient: React.FC<HeaderClientProps> = ({ data, categories }) => {
-  const [theme, setTheme] = useState<string | null>(null)
   const [isSticky, setIsSticky] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { headerTheme, setHeaderTheme } = useHeaderTheme()
   const pathname = usePathname()
+  // Menu mobile ouvert « pour » une page donnée : il se referme de lui-même au changement de route
+  const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null)
+  const isMobileMenuOpen = mobileMenuPath === pathname
+  const theme = headerTheme
 
-  // Reset header theme on route change
+  // Thème d'en-tête remis à zéro à chaque page (contexte partagé, donc système externe)
   useEffect(() => {
     setHeaderTheme(null)
-    setIsMobileMenuOpen(false)
   }, [pathname, setHeaderTheme])
-
-  // Update theme when headerTheme changes
-  useEffect(() => {
-    if (headerTheme && headerTheme !== theme) setTheme(headerTheme)
-  }, [headerTheme, theme])
 
   // Sticky header on scroll
   useEffect(() => {
@@ -57,22 +53,25 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data, categories }) 
   }, [isMobileMenuOpen])
 
   const toggleMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen((prev) => !prev)
-  }, [])
+    setMobileMenuPath((open) => (open === pathname ? null : pathname))
+  }, [pathname])
 
   return (
     <header
       className={`
         w-full z-50 transition-all duration-300
-        ${isSticky
-          ? 'fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-md border-b border-border shadow-sm'
-          : 'relative'
+        ${
+          isSticky
+            ? 'fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-md border-b border-border shadow-sm'
+            : 'relative'
         }
       `}
       {...(theme ? { 'data-theme': theme } : {})}
     >
       <div className="container">
-        <div className={`flex justify-between items-center ${isSticky ? 'py-4' : 'py-8'} transition-all duration-300`}>
+        <div
+          className={`flex justify-between items-center ${isSticky ? 'py-4' : 'py-8'} transition-all duration-300`}
+        >
           <Link href="/" className="relative z-50">
             <Logo
               className={`text-foreground transition-all duration-300 ${isSticky ? 'text-2xl' : 'text-3xl'}`}

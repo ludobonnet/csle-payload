@@ -9,7 +9,10 @@ import Link from 'next/link'
 import { SearchIcon } from 'lucide-react'
 import { CategoryDropdown } from '../CategoryDropdown'
 
-export const HeaderNav: React.FC<{ data: HeaderType; categories: Category[] }> = ({ data, categories }) => {
+export const HeaderNav: React.FC<{ data: HeaderType; categories: Category[] }> = ({
+  data,
+  categories,
+}) => {
   const navItems = data?.navItems || []
 
   return (

@@ -1,6 +1,4 @@
-'use client'
 import { cn } from '@/utilities/ui'
-import useClickableCard from '@/utilities/useClickableCard'
 import Link from 'next/link'
 import React, { Fragment } from 'react'
 
@@ -13,7 +11,6 @@ export const MinimalCard: React.FC<{
   doc?: MinimalCardPostData
   showCategories?: boolean
 }> = (props) => {
-  const { card, link } = useClickableCard({})
   const { className, doc, showCategories } = props
 
   const { slug, categories, title, publishedAt } = doc || {}
@@ -33,10 +30,9 @@ export const MinimalCard: React.FC<{
   return (
     <article
       className={cn(
-        'group relative pl-4 border-l-2 border-primary hover:cursor-pointer hover:border-primary-hover transition-colors',
+        'group relative pl-4 border-l-2 border-primary hover:border-primary-hover transition-colors',
         className,
       )}
-      ref={card.ref}
     >
       {showCategories && hasCategories && (
         <div className="text-overline uppercase tracking-wider text-primary mb-2">
@@ -59,15 +55,13 @@ export const MinimalCard: React.FC<{
 
       {title && (
         <h3 className="font-display text-h4 text-foreground group-hover:text-primary transition-colors leading-snug">
-          <Link href={href} ref={link.ref}>
+          <Link href={href} className="after:absolute after:inset-0 after:content-['']">
             {title}
           </Link>
         </h3>
       )}
 
-      {formattedDate && (
-        <p className="text-caption text-muted-foreground mt-2">{formattedDate}</p>
-      )}
+      {formattedDate && <p className="text-caption text-muted-foreground mt-2">{formattedDate}</p>}
     </article>
   )
 }

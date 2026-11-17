@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useState } from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,52 +23,49 @@ export const NewsletterSignup: React.FC<NewsletterSignupProps> = ({ form }) => {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [error, setError] = useState<string | undefined>()
 
-  const onSubmit = useCallback(
-    async (data: { email: string }) => {
-      if (!form?.id) {
-        setError('Le formulaire de newsletter n\'est pas configuré.')
+  const onSubmit = async (data: { email: string }) => {
+    if (!form?.id) {
+      setError("Le formulaire de newsletter n'est pas configuré.")
+      return
+    }
+
+    setError(undefined)
+    setIsLoading(true)
+
+    try {
+      const req = await fetch(`${getClientSideURL()}/api/form-submissions`, {
+        body: JSON.stringify({
+          form: form.id,
+          submissionData: [
+            {
+              field: 'email',
+              value: data.email,
+            },
+          ],
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      })
+
+      const res = await req.json()
+
+      if (req.status >= 400) {
+        setError(res.errors?.[0]?.message || 'Une erreur est survenue.')
+        setIsLoading(false)
         return
       }
 
-      setError(undefined)
-      setIsLoading(true)
-
-      try {
-        const req = await fetch(`${getClientSideURL()}/api/form-submissions`, {
-          body: JSON.stringify({
-            form: form.id,
-            submissionData: [
-              {
-                field: 'email',
-                value: data.email,
-              },
-            ],
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-        })
-
-        const res = await req.json()
-
-        if (req.status >= 400) {
-          setError(res.errors?.[0]?.message || 'Une erreur est survenue.')
-          setIsLoading(false)
-          return
-        }
-
-        setIsLoading(false)
-        setHasSubmitted(true)
-        reset()
-      } catch (err) {
-        console.error('Newsletter signup error:', err)
-        setIsLoading(false)
-        setError('Une erreur est survenue. Veuillez réessayer.')
-      }
-    },
-    [form?.id, reset],
-  )
+      setIsLoading(false)
+      setHasSubmitted(true)
+      reset()
+    } catch (err) {
+      console.error('Newsletter signup error:', err)
+      setIsLoading(false)
+      setError('Une erreur est survenue. Veuillez réessayer.')
+    }
+  }
 
   if (!form) {
     return null
@@ -92,7 +89,7 @@ export const NewsletterSignup: React.FC<NewsletterSignupProps> = ({ form }) => {
             type="email"
             placeholder="Votre email"
             {...register('email', {
-              required: 'L\'email est requis',
+              required: "L'email est requis",
               pattern: {
                 value: /^\S[^\s@]*@\S+$/,
                 message: 'Email invalide',
@@ -104,12 +101,7 @@ export const NewsletterSignup: React.FC<NewsletterSignupProps> = ({ form }) => {
             aria-describedby={errors.email ? 'email-error' : undefined}
           />
         </div>
-        <Button
-          type="submit"
-          variant="default"
-          disabled={isLoading}
-          className="whitespace-nowrap"
-        >
+        <Button type="submit" variant="default" disabled={isLoading} className="whitespace-nowrap">
           {isLoading ? 'Envoi...' : "S'inscrire"}
         </Button>
       </form>

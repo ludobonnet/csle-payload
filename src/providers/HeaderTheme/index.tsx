@@ -4,8 +4,6 @@ import type { Theme } from '@/providers/Theme/types'
 
 import React, { createContext, useCallback, use, useState } from 'react'
 
-import canUseDOM from '@/utilities/canUseDOM'
-
 export interface ContextType {
   headerTheme?: Theme | null
   setHeaderTheme: (theme: Theme | null) => void
@@ -19,9 +17,9 @@ const initialContext: ContextType = {
 const HeaderThemeContext = createContext(initialContext)
 
 export const HeaderThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [headerTheme, setThemeState] = useState<Theme | undefined | null>(
-    canUseDOM ? (document.documentElement.getAttribute('data-theme') as Theme) : undefined,
-  )
+  // Même valeur initiale côté serveur et client (pas de lecture du DOM) : chaque page fixe
+  // ensuite son thème d'en-tête après montage, sans écart d'hydratation.
+  const [headerTheme, setThemeState] = useState<Theme | undefined | null>(undefined)
 
   const setHeaderTheme = useCallback((themeToSet: Theme | null) => {
     setThemeState(themeToSet)

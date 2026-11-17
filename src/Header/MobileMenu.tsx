@@ -17,7 +17,7 @@ interface MobileMenuProps {
 export const MobileMenu: React.FC<MobileMenuProps> = ({ data, categories, isOpen, onToggle }) => {
   const navItems = data?.navItems || []
   const pathname = usePathname()
-  const currentCategory = categories.find(cat => `/${cat.slug}` === pathname)
+  const currentCategory = categories.find((cat) => `/${cat.slug}` === pathname)
 
   return (
     <>

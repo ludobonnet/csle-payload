@@ -11,15 +11,18 @@ interface CategoryDropdownProps {
 }
 
 export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({ categories }) => {
-  const [isOpen, setIsOpen] = useState(false)
+  // Ouvert « pour » une page donnée : se referme de lui-même au changement de route
+  const [openPath, setOpenPath] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
+  const isOpen = openPath === pathname
+  const setIsOpen = (open: boolean) => setOpenPath(open ? pathname : null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+        setOpenPath(null)
       }
     }
 
@@ -29,13 +32,8 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({ categories }
     }
   }, [isOpen])
 
-  // Close dropdown on route change
-  useEffect(() => {
-    setIsOpen(false)
-  }, [pathname])
-
   // Check if we're on a category page
-  const currentCategory = categories.find(cat => `/${cat.slug}` === pathname)
+  const currentCategory = categories.find((cat) => `/${cat.slug}` === pathname)
 
   return (
     <div className="relative" ref={dropdownRef}>

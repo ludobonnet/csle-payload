@@ -1,6 +1,4 @@
-'use client'
 import { cn } from '@/utilities/ui'
-import useClickableCard from '@/utilities/useClickableCard'
 import Link from 'next/link'
 import React, { Fragment } from 'react'
 
@@ -8,14 +6,16 @@ import type { Post } from '@/payload-types'
 
 import { Media } from '@/components/Media'
 
-export type FeaturedCardPostData = Pick<Post, 'slug' | 'categories' | 'meta' | 'title' | 'heroImage'>
+export type FeaturedCardPostData = Pick<
+  Post,
+  'slug' | 'categories' | 'meta' | 'title' | 'heroImage'
+>
 
 export const FeaturedCard: React.FC<{
   className?: string
   doc?: FeaturedCardPostData
   showCategories?: boolean
 }> = (props) => {
-  const { card, link } = useClickableCard({})
   const { className, doc, showCategories } = props
 
   const { slug, categories, meta, title, heroImage } = doc || {}
@@ -28,10 +28,9 @@ export const FeaturedCard: React.FC<{
   return (
     <article
       className={cn(
-        'group relative overflow-hidden bg-card hover:cursor-pointer aspect-[16/9] min-h-[400px]',
+        'group relative overflow-hidden bg-card aspect-[16/9] min-h-[400px]',
         className,
       )}
-      ref={card.ref}
     >
       {/* Background Image */}
       <div className="absolute inset-0">
@@ -73,7 +72,10 @@ export const FeaturedCard: React.FC<{
 
         {title && (
           <h2 className="font-display text-h2 md:text-display text-white leading-tight">
-            <Link href={href} ref={link.ref} className="hover:underline underline-offset-4">
+            <Link
+              href={href}
+              className="hover:underline underline-offset-4 after:absolute after:inset-0 after:content-['']"
+            >
               {title}
             </Link>
           </h2>
