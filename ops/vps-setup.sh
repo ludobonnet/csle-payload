@@ -27,9 +27,9 @@ if [ ! -f /etc/csle/pg-credentials.env ]; then
 fi
 set -a; . /etc/csle/pg-credentials.env; set +a
 if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='csle_owner'" | grep -q 1; then
-  cp postgres-setup.sql /tmp/csle-pg-setup.sql; chmod 644 /tmp/csle-pg-setup.sql
-  sudo -u postgres psql -q -v ON_ERROR_STOP=1 -v owner_pwd="'$CSLE_OWNER_PWD'" -v app_pwd="'$CSLE_APP_PWD'" -f /tmp/csle-pg-setup.sql
-  rm -f /tmp/csle-pg-setup.sql
+  # SQL et mots de passe sur l'entrée standard : ni fichier temporaire, ni secret dans la liste des processus
+  { printf '\\set owner_pwd %s\n\\set app_pwd %s\n' "$CSLE_OWNER_PWD" "$CSLE_APP_PWD"; cat postgres-setup.sql; } \
+    | sudo -u postgres psql -q -v ON_ERROR_STOP=1
 fi
 # Environnement du service
 if [ ! -f /etc/csle/front.env ]; then

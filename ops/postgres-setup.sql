@@ -4,14 +4,14 @@
 --   csle_app   : runtime du site et de l'admin, DML seul, aucun DDL
 --
 -- Exécution (superutilisateur, mots de passe générés sur le serveur) :
---   sudo -u postgres psql -v ON_ERROR_STOP=1 \
---     -v owner_pwd="'$CSLE_OWNER_PWD'" -v app_pwd="'$CSLE_APP_PWD'" -f postgres-setup.sql
+--   ops/vps-setup.sh, qui préfixe sur l'entrée standard `\set owner_pwd …` et `\set app_pwd …`
+--   (pas de fichier temporaire, pas de mot de passe dans la liste des processus)
 --
 -- ⚠️ À jouer AVANT toute migration ou restauration : ALTER DEFAULT PRIVILEGES ne couvre
 --    que les tables créées après lui (constaté côté LSAN, erreur 42501 sinon).
 
-CREATE ROLE csle_owner LOGIN PASSWORD :owner_pwd;
-CREATE ROLE csle_app   LOGIN PASSWORD :app_pwd;
+CREATE ROLE csle_owner LOGIN PASSWORD :'owner_pwd';
+CREATE ROLE csle_app   LOGIN PASSWORD :'app_pwd';
 CREATE DATABASE csle OWNER csle_owner;
 
 -- Des rôles distincts n'isolent pas les bases : CONNECT est accordé à PUBLIC par défaut
