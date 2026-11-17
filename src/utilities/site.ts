@@ -12,3 +12,13 @@ export const SITE_EDITOR = 'Ludovic Bonnet'
 /** Contact : formulaire Tally intégré à /contact. Identifiant = fin de l'URL tally.so/r/<id>. */
 export const CONTACT_PATH = '/contact'
 export const TALLY_FORM_ID = ''
+
+/**
+ * Mesure d'audience : Umami auto-hébergé sur le VPS (sans cookie), servi par stats.csle.fr.
+ * Le script n'envoie rien hors des domaines de prod (dev et recette ne polluent pas les stats).
+ */
+export const UMAMI = {
+  scriptUrl: 'https://stats.csle.fr/script.js',
+  websiteId: '4ea0de58-f370-4d31-9bb2-44e1ebd68c14',
+  domains: 'csle.fr,www.csle.fr',
+} as const

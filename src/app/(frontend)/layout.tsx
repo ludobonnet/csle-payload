@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { cn } from '@/utilities/ui'
 import { Playfair_Display, Inter } from 'next/font/google'
 import React from 'react'
+import Script from 'next/script'
 
 // Editorial serif for headings - elegant, magazine-style
 const playfair = Playfair_Display({
@@ -29,7 +30,7 @@ import { draftMode } from 'next/headers'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
-import { pageTitle, SITE_DESCRIPTION } from '@/utilities/site'
+import { pageTitle, SITE_DESCRIPTION, UMAMI } from '@/utilities/site'
 
 // Tout le site public est rendu à la requête (trafic faible, Cloudflare devant) :
 // le build ne touche jamais la base, et aucune page n'est figée sans ses données
@@ -45,6 +46,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <InitTheme />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
+        <Script
+          defer
+          src={UMAMI.scriptUrl}
+          data-website-id={UMAMI.websiteId}
+          data-domains={UMAMI.domains}
+          data-do-not-track="true"
+        />
       </head>
       <body>
         <Providers>

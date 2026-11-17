@@ -3,6 +3,14 @@
  * Les redirections éditoriales ponctuelles passent par la collection `redirects` de l'admin.
  */
 const redirects = async () => [
+  // www → apex (une seule URL canonique ; le tunnel sert les deux hostnames)
+  {
+    source: '/:path*',
+    has: [{ type: 'host', value: 'www.csle.fr' }],
+    destination: 'https://csle.fr/:path*',
+    permanent: true,
+  },
+
   // Anciennes URLs /posts/:slug du template → URL canonique /:slug
   { source: '/posts/:slug', destination: '/:slug', permanent: true },
 
