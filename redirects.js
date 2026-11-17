@@ -1,27 +1,14 @@
-const redirects = async () => {
-  const internetExplorerRedirect = {
-    destination: '/ie-incompatible.html',
-    has: [
-      {
-        type: 'header',
-        key: 'user-agent',
-        value: '(.*Trident.*)', // all ie browsers
-      },
-    ],
-    permanent: false,
-    source: '/:path((?!ie-incompatible.html$).*)', // all pages except the incompatibility page
-  }
+/**
+ * Redirections permanentes versionnées avec le code.
+ * Les redirections éditoriales ponctuelles passent par la collection `redirects` de l'admin.
+ */
+const redirects = async () => [
+  // Anciennes URLs /posts/:slug du template → URL canonique /:slug
+  { source: '/posts/:slug', destination: '/:slug', permanent: true },
 
-  // SEO redirect: old /posts/:slug URLs to new /:slug URLs
-  const postsRedirect = {
-    source: '/posts/:slug',
-    destination: '/:slug',
-    permanent: true,
-  }
-
-  const redirects = [internetExplorerRedirect, postsRedirect]
-
-  return redirects
-}
+  // Articles WordPress vides (vidéos Flash de 2008), non migrés : vers leur catégorie
+  { source: '/jamel-comedy-club-thomas-ngijol-et-blanche-une-super-chanson-damour', destination: '/humour', permanent: true },
+  { source: '/le-king-du-bling-bling', destination: '/humour', permanent: true },
+]
 
 export default redirects
