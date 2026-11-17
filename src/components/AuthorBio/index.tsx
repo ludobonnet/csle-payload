@@ -3,7 +3,7 @@ import React from 'react'
 import type { User, Media as MediaType } from '@/payload-types'
 import { Media } from '@/components/Media'
 
-// Support both full User type and simplified populatedAuthors type
+// Accepte l'utilisateur complet ou la forme simplifiée de populatedAuthors
 interface SimpleAuthor {
   id?: string | null
   name?: string | null
@@ -13,60 +13,32 @@ interface AuthorBioProps {
   author: SimpleAuthor | User
 }
 
-// Type guard to check if author has full User data
 function isFullUser(author: SimpleAuthor | User): author is User {
   return 'bio' in author || 'avatar' in author
 }
 
+/**
+ * Encart auteur en fin d'article. N'apparaît que si l'auteur a une bio : le nom
+ * figure déjà sous le titre.
+ */
 export const AuthorBio: React.FC<AuthorBioProps> = ({ author }) => {
   const name = author.name
   const bio = isFullUser(author) ? author.bio : null
   const avatar = isFullUser(author) ? author.avatar : null
 
-  if (!name) return null
+  if (!name || !bio) return null
 
   return (
-    <div className="border-t border-border pt-8 mt-12">
-      <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div className="relative w-16 h-16 rounded-full overflow-hidden bg-muted flex-shrink-0">
-          {avatar && typeof avatar !== 'string' ? (
-            <Media
-              resource={avatar as MediaType}
-              fill
-              size="64px"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="8" r="4" />
-                <path d="M20 21a8 8 0 0 0-16 0" />
-              </svg>
-            </div>
-          )}
+    <aside className="flex items-start gap-5 bg-wash p-6 md:p-8" aria-label={`À propos de ${name}`}>
+      {avatar && typeof avatar === 'object' && (
+        <div className="relative size-16 shrink-0 overflow-hidden rounded-full bg-muted">
+          <Media resource={avatar as MediaType} fill size="64px" />
         </div>
-
-        {/* Info */}
-        <div className="flex-1">
-          <p className="text-overline text-muted-foreground uppercase tracking-wider mb-1">
-            Écrit par
-          </p>
-          <h4 className="font-display text-h4 text-foreground mb-2">{name}</h4>
-          {bio && (
-            <p className="text-body-sm text-muted-foreground leading-relaxed">{bio}</p>
-          )}
-        </div>
+      )}
+      <div>
+        <p className="font-serif text-h4 text-ink">{name}</p>
+        <p className="mt-2 font-sans text-body-sm text-ink-soft">{bio}</p>
       </div>
-    </div>
+    </aside>
   )
 }

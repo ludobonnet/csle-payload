@@ -39,28 +39,44 @@ const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   return `/${slug}`
 }
 
+type InlineNode = { type?: string; text?: string }
+
+/**
+ * Paragraphe « vide » : sans enfant, ou seulement des retours à la ligne et des espaces.
+ * La migration WordPress en a laissé un entre chaque paragraphe (`<p><br/></p>`, `<p>&nbsp;</p>`),
+ * ce qui doublait les interlignes et décalait le chapeau.
+ */
+const isBlankParagraph = (children: InlineNode[] | undefined) =>
+  !children?.length ||
+  children.every(
+    (child) => child.type === 'linebreak' || (child.type === 'text' && !child.text?.trim()),
+  )
+
 const jsxConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) => ({
   ...defaultConverters,
   ...LinkJSXConverter({ internalDocToHref }),
+  paragraph: ({ node, nodesToJSX }) =>
+    isBlankParagraph(node.children as InlineNode[]) ? null : (
+      <p>{nodesToJSX({ nodes: node.children })}</p>
+    ),
   blocks: {
-    banner: ({ node }) => <BannerBlock className="col-start-2 mb-4" {...node.fields} />,
+    banner: ({ node }) => <BannerBlock className="not-prose my-8" {...node.fields} />,
+    // Photos et vidéos débordent un peu de la colonne de lecture sur grand écran
     mediaBlock: ({ node }) => (
       <MediaBlock
-        className="col-start-1 col-span-3"
-        imgClassName="m-0"
+        className="not-prose my-10 xl:-mx-24"
         {...node.fields}
-        captionClassName="mx-auto max-w-[48rem]"
         enableGutter={false}
         disableInnerContainer={true}
-        // Colonne d'article : 52rem max (832 px)
+        // Colonne de lecture 40rem, élargie à 52rem (832 px) en xl
         size="(max-width: 832px) 100vw, 832px"
       />
     ),
     // Vidéos YouTube, Vimeo, Dailymotion (198 reprises de WordPress)
     embed: ({ node }) => (
-      <EmbedBlock className="col-start-1 col-span-3 my-8" {...node.fields} disableInnerContainer />
+      <EmbedBlock className="not-prose my-10 xl:-mx-24" {...node.fields} disableInnerContainer />
     ),
-    code: ({ node }) => <CodeBlock className="col-start-2" {...node.fields} />,
+    code: ({ node }) => <CodeBlock className="not-prose my-8" {...node.fields} />,
     cta: ({ node }) => <CallToActionBlock {...node.fields} />,
   },
 })
@@ -80,8 +96,8 @@ export default function RichText(props: Props) {
         'payload-richtext',
         {
           container: enableGutter,
-          'max-w-none': !enableGutter,
-          'mx-auto prose md:prose-md dark:prose-invert': enableProse,
+          'max-w-none': !enableGutter && !enableProse,
+          'mx-auto prose lg:prose-lg': enableProse,
         },
         className,
       )}

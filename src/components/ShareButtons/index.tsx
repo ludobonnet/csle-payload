@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { Facebook, Twitter, Linkedin, Link as LinkIcon, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useSyncExternalStore } from 'react'
 import { cn } from '@/utilities/ui'
 
 type ShareButtonsProps = {
@@ -12,118 +10,86 @@ type ShareButtonsProps = {
   className?: string
 }
 
+const noopSubscribe = () => () => {}
+
+const linkClass =
+  'font-sans text-[0.9375rem] text-ink underline decoration-sauge decoration-[1.5px] underline-offset-[0.2em] hover:text-sauge-ink'
+
+/**
+ * Partage en liens texte, sans icônes de marques ni traceurs : copie du lien, e-mail,
+ * Facebook, Bluesky, LinkedIn. Sur mobile, un seul bouton ouvre la feuille de partage du système.
+ */
 export function ShareButtons({ title, slug, description, className }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false)
+  // Lu après hydratation seulement (null côté serveur) : pas d'écart de rendu
+  const hasNativeShare = useSyncExternalStore(
+    noopSubscribe,
+    () => typeof navigator.share === 'function' && window.matchMedia('(pointer: coarse)').matches,
+    () => false,
+  )
 
   const url = `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://csle.fr'}/${slug}`
   const encodedUrl = encodeURIComponent(url)
   const encodedTitle = encodeURIComponent(title)
 
-  // Share URLs for each platform
-  const shareUrls = {
-    twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-  }
+  const shareLinks = [
+    { label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}` },
+    {
+      label: 'Bluesky',
+      href: `https://bsky.app/intent/compose?text=${encodedTitle}%20${encodedUrl}`,
+    },
+    {
+      label: 'LinkedIn',
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    },
+  ]
 
-  const handleCopyLink = async () => {
+  const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy link:', err)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      // Presse-papiers refusé (contexte non sécurisé) : le lien reste dans la barre d'adresse
     }
   }
 
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text: description,
-          url,
-        })
-      } catch (err) {
-        // User cancelled or share failed - ignore
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Share failed:', err)
-        }
-      }
+  const nativeShare = async () => {
+    try {
+      await navigator.share({ title, text: description, url })
+    } catch {
+      // Partage annulé par le lecteur
     }
   }
-
-  // Check if native share is available (mobile devices)
-  const hasNativeShare = typeof navigator !== 'undefined' && navigator.share
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <span className="text-sm font-medium text-muted-foreground mr-2">Partager</span>
-
+    <div className={cn('flex flex-wrap items-baseline gap-x-5 gap-y-2', className)}>
+      <span className="font-sans font-condensed text-[0.9375rem] font-semibold">
+        Partager l&apos;article
+      </span>
       {hasNativeShare ? (
-        // On mobile: show single native share button
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNativeShare}
-          className="hover:bg-accent hover:text-accent-foreground transition-colors"
-          aria-label="Partager cet article"
-        >
-          <LinkIcon className="size-4" />
-        </Button>
+        <button type="button" onClick={nativeShare} className={linkClass}>
+          Envoyer à quelqu&apos;un
+        </button>
       ) : (
-        // On desktop: show individual platform buttons
         <>
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className="hover:text-[#1DA1F2] transition-colors"
-            aria-label="Partager sur Twitter"
-          >
-            <a href={shareUrls.twitter} target="_blank" rel="noopener noreferrer">
-              <Twitter className="size-4" />
+          <button type="button" onClick={copyLink} className={linkClass} aria-live="polite">
+            {copied ? 'Lien copié' : 'Copier le lien'}
+          </button>
+          <a className={linkClass} href={`mailto:?subject=${encodedTitle}&body=${encodedUrl}`}>
+            E-mail
+          </a>
+          {shareLinks.map((link) => (
+            <a
+              key={link.label}
+              className={linkClass}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {link.label}
             </a>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className="hover:text-[#1877F2] transition-colors"
-            aria-label="Partager sur Facebook"
-          >
-            <a href={shareUrls.facebook} target="_blank" rel="noopener noreferrer">
-              <Facebook className="size-4" />
-            </a>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className="hover:text-[#0A66C2] transition-colors"
-            aria-label="Partager sur LinkedIn"
-          >
-            <a href={shareUrls.linkedin} target="_blank" rel="noopener noreferrer">
-              <Linkedin className="size-4" />
-            </a>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCopyLink}
-            className="relative hover:text-primary transition-colors"
-            aria-label="Copier le lien"
-          >
-            {copied ? <Check className="size-4" /> : <LinkIcon className="size-4" />}
-            {copied && (
-              <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs bg-foreground text-background px-2 py-1 rounded whitespace-nowrap">
-                Copié !
-              </span>
-            )}
-          </Button>
+          ))}
         </>
       )}
     </div>

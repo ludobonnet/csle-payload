@@ -20,6 +20,7 @@ type Props = MediaBlockProps & {
   disableInnerContainer?: boolean
 }
 
+/** Photo avec légende facultative : image à bords francs, légende en petite grotesque. */
 export const MediaBlock: React.FC<Props> = (props) => {
   const {
     captionClassName,
@@ -29,43 +30,25 @@ export const MediaBlock: React.FC<Props> = (props) => {
     media,
     size,
     staticImage,
-    disableInnerContainer,
   } = props
 
-  let caption
-  if (media && typeof media === 'object') caption = media.caption
+  const caption = media && typeof media === 'object' ? media.caption : undefined
 
   return (
-    <div
-      className={cn(
-        '',
-        {
-          container: enableGutter,
-        },
-        className,
-      )}
-    >
+    <figure className={cn({ container: enableGutter }, className)}>
       {(media || staticImage) && (
         <Media
-          imgClassName={cn('border border-border rounded-[0.8rem]', imgClassName)}
+          imgClassName={cn('h-auto w-full', imgClassName)}
           resource={media}
           size={size}
           src={staticImage}
         />
       )}
       {caption && (
-        <div
-          className={cn(
-            'mt-6',
-            {
-              container: !disableInnerContainer,
-            },
-            captionClassName,
-          )}
-        >
-          <RichText data={caption} enableGutter={false} />
-        </div>
+        <figcaption className={cn('meta mt-3', captionClassName)}>
+          <RichText data={caption} enableGutter={false} enableProse={false} className="[&_p]:m-0" />
+        </figcaption>
       )}
-    </div>
+    </figure>
   )
 }

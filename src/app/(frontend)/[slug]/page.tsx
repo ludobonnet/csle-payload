@@ -25,8 +25,7 @@ type ResolvedSlug =
   | { type: 'post'; data: Post }
   | { type: 'not-found'; data: null }
 
-// Use dynamic rendering to avoid Neon free tier memory issues during SSG
-// Pages will be server-rendered on demand and cached by Vercel's Edge cache
+// Rendu à la requête, comme tout le site public (voir le layout)
 export const dynamic = 'force-dynamic'
 
 type Args = {
@@ -76,7 +75,7 @@ export default async function DynamicPage({ params: paramsPromise }: Args) {
 
     case 'post':
       return (
-        <article className="pt-16 pb-16">
+        <article>
           <PageClient />
           <PayloadRedirects disableNotFound url={url} />
           {draft && <LivePreviewListener />}

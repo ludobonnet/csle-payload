@@ -337,7 +337,7 @@ html[data-theme='light'] {
 
   /* Premier paragraphe d'un article : chapeau */
   .prose-chapeau > p:first-of-type {
-    font-size: 1.375em;
+    font-size: 1.2em;
     line-height: 1.45;
     color: var(--ink);
     font-variation-settings: 'opsz' 36;

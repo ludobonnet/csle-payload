@@ -44,11 +44,7 @@ export async function CategoryArchive({ category, page = 1 }: Props) {
       </div>
 
       <div className="container mb-8">
-        <PageRange
-          currentPage={posts.page}
-          limit={12}
-          totalDocs={posts.totalDocs}
-        />
+        <PageRange currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
       </div>
 
       <CollectionArchive posts={posts.docs} />

@@ -12,50 +12,50 @@ type Props = {
   post: Post
 }
 
+/** Article : en-tête, colonne de lecture, puis une fin d'article sobre (partage, auteur, suite). */
 export function PostContent({ post }: Props) {
-  // Get the first author for the bio section
-  const authors = post.populatedAuthors
-  const firstAuthor = authors && authors.length > 0 ? authors[0] : null
+  const firstAuthor = post.populatedAuthors?.[0]
+  const related = (post.relatedPosts ?? []).filter(
+    (relatedPost): relatedPost is Post => typeof relatedPost === 'object',
+  )
 
   return (
     <>
       <PostHero post={post} />
 
-      <div className="flex flex-col items-center gap-4 pt-8">
-        <div className="container">
-          <div className="max-w-[48rem] mx-auto">
-            <RichText data={post.content} enableGutter={false} />
+      <div className="container pt-12 md:pt-16">
+        <div className="mx-auto max-w-measure">
+          <RichText data={post.content} enableGutter={false} className="prose-chapeau" />
 
-            {/* Share Buttons - after content */}
+          {/* Fin de l'article : le filet, comme un point final */}
+          <div className="mt-14 flex flex-col gap-5">
+            <span aria-hidden="true" className="block h-[0.4375rem] w-14 bg-sauge" />
             <ShareButtons
               title={post.title}
               slug={post.slug || ''}
               description={post.meta?.description || undefined}
-              className="mt-8 mb-8 pb-8 border-b border-border"
             />
+            {post.tags && post.tags.length > 0 && <TagList tags={post.tags} />}
+          </div>
 
-            {/* Tags - after share buttons */}
-            {post.tags && post.tags.length > 0 && (
-              <TagList tags={post.tags} />
-            )}
-
-            {/* Author Bio - after tags, before related posts */}
-            {firstAuthor && typeof firstAuthor === 'object' && (
+          {firstAuthor && typeof firstAuthor === 'object' && (
+            <div className="mt-12">
               <AuthorBio author={firstAuthor} />
-            )}
-          </div>
-
-          {post.relatedPosts && post.relatedPosts.length > 0 && (
-            <RelatedPosts
-              className="mt-12 max-w-[52rem] lg:grid lg:grid-cols-subgrid col-start-1 col-span-3 grid-rows-[2fr]"
-              docs={post.relatedPosts.filter((post) => typeof post === 'object')}
-            />
+            </div>
           )}
+        </div>
 
-          {/* Previous/Next Navigation - after related posts */}
-          <div className="max-w-[52rem] mx-auto">
-            <PostNavigation currentPost={post} />
-          </div>
+        {related.length > 0 && (
+          <section className="mt-20" aria-labelledby="a-lire-aussi">
+            <h2 id="a-lire-aussi" className="filet font-serif text-h2">
+              À lire aussi
+            </h2>
+            <RelatedPosts className="mt-8" docs={related} />
+          </section>
+        )}
+
+        <div className="mx-auto mt-20 max-w-[60rem]">
+          <PostNavigation currentPost={post} />
         </div>
       </div>
     </>

@@ -7,12 +7,14 @@ type BreadcrumbsProps = {
   post?: Post
   category?: Category
   className?: string
+  /** false : seulement les données structurées (JSON-LD), sans fil visible */
+  visual?: boolean
 }
 
-export function Breadcrumbs({ post, category, className }: BreadcrumbsProps) {
+export function Breadcrumbs({ post, category, className, visual = true }: BreadcrumbsProps) {
   // Build breadcrumb items
   const items: Array<{ label: string; href: string; current?: boolean }> = [
-    { label: 'Home', href: '/' },
+    { label: 'Accueil', href: '/' },
   ]
 
   if (post) {
@@ -26,9 +28,7 @@ export function Breadcrumbs({ post, category, className }: BreadcrumbsProps) {
     }
 
     // Truncate long titles to ~40 chars
-    const truncatedTitle = post.title.length > 40
-      ? `${post.title.substring(0, 40)}...`
-      : post.title
+    const truncatedTitle = post.title.length > 40 ? `${post.title.substring(0, 40)}...` : post.title
 
     items.push({
       label: truncatedTitle,
@@ -65,37 +65,38 @@ export function Breadcrumbs({ post, category, className }: BreadcrumbsProps) {
       />
 
       {/* Visual breadcrumbs */}
-      <nav aria-label="Breadcrumb" className={cn('mb-4', className)}>
-        <ol className="flex flex-wrap items-center gap-1.5 text-caption text-white/70">
-          {items.map((item, index) => {
-            const isLast = index === items.length - 1
+      {visual && (
+        <nav aria-label="Fil d'Ariane" className={cn('mb-4', className)}>
+          <ol className="meta flex flex-wrap items-center gap-1.5">
+            {items.map((item, index) => {
+              const isLast = index === items.length - 1
 
-            return (
-              <li key={item.href} className="flex items-center gap-1.5">
-                {isLast ? (
-                  <span className="text-white/90" aria-current="page">
-                    {item.label}
-                  </span>
-                ) : (
-                  <>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        'transition-colors duration-200',
-                        'hover:text-white hover:underline',
-                        'focus-visible:outline-none focus-visible:underline focus-visible:text-white'
-                      )}
-                    >
+              return (
+                <li key={item.href} className="flex items-center gap-1.5">
+                  {isLast ? (
+                    <span className="text-ink" aria-current="page">
                       {item.label}
-                    </Link>
-                    <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-                  </>
-                )}
-              </li>
-            )
-          })}
-        </ol>
-      </nav>
+                    </span>
+                  ) : (
+                    <>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          'transition-colors duration-200',
+                          'hover:text-sauge-ink hover:underline',
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                      <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                    </>
+                  )}
+                </li>
+              )
+            })}
+          </ol>
+        </nav>
+      )}
     </>
   )
 }

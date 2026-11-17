@@ -1,143 +1,101 @@
 import React from 'react'
 import Link from 'next/link'
-import { Media } from '@/components/Media'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
+
 import type { Post } from '@/payload-types'
+import { Media } from '@/components/Media'
+import { cn } from '@/utilities/ui'
 
 type PostNavigationProps = {
   currentPost: Post
 }
 
+type VoisinPost = Pick<Post, 'id' | 'title' | 'slug' | 'heroImage' | 'meta'>
+
+const select = { title: true, slug: true, heroImage: true, meta: true } as const
+
+/** Article plus ancien / plus récent, par date de publication. */
 export async function PostNavigation({ currentPost }: PostNavigationProps) {
+  if (!currentPost.publishedAt) return null
   const payload = await getPayload({ config: configPromise })
 
-  // Get previous post (older, earlier publishedAt)
-  const previousResult = await payload.find({
-    collection: 'posts',
-    where: {
-      publishedAt: {
-        less_than: currentPost.publishedAt,
+  const [olderResult, newerResult] = await Promise.all([
+    payload.find({
+      collection: 'posts',
+      where: {
+        publishedAt: { less_than: currentPost.publishedAt },
+        _status: { equals: 'published' },
       },
-      _status: {
-        equals: 'published',
+      sort: '-publishedAt',
+      limit: 1,
+      depth: 1,
+      select,
+      overrideAccess: false,
+    }),
+    payload.find({
+      collection: 'posts',
+      where: {
+        publishedAt: { greater_than: currentPost.publishedAt },
+        _status: { equals: 'published' },
       },
-    },
-    sort: '-publishedAt',
-    limit: 1,
-    overrideAccess: false,
-  })
+      sort: 'publishedAt',
+      limit: 1,
+      depth: 1,
+      select,
+      overrideAccess: false,
+    }),
+  ])
 
-  // Get next post (newer, later publishedAt)
-  const nextResult = await payload.find({
-    collection: 'posts',
-    where: {
-      publishedAt: {
-        greater_than: currentPost.publishedAt,
-      },
-      _status: {
-        equals: 'published',
-      },
-    },
-    sort: 'publishedAt',
-    limit: 1,
-    overrideAccess: false,
-  })
+  const older = olderResult.docs[0] as VoisinPost | undefined
+  const newer = newerResult.docs[0] as VoisinPost | undefined
 
-  const previousPost = previousResult.docs[0] || null
-  const nextPost = nextResult.docs[0] || null
-
-  // Don't render if no navigation available
-  if (!previousPost && !nextPost) {
-    return null
-  }
+  if (!older && !newer) return null
 
   return (
-    <nav className="border-t border-border mt-16 pt-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Previous Post */}
-        <div className="md:pr-8">
-          {previousPost ? (
-            <Link
-              href={`/${previousPost.slug}`}
-              className="group flex flex-col h-full hover:opacity-80 transition-opacity"
-            >
-              <div className="flex items-center gap-2 text-caption text-muted-foreground mb-3">
-                <ChevronLeft className="w-4 h-4" />
-                <span className="uppercase tracking-wider">Article précédent</span>
-              </div>
-              <div className="flex gap-4 items-start">
-                {(previousPost.heroImage || previousPost.meta?.image) && (
-                  <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded">
-                    <Media
-                      resource={
-                        typeof previousPost.heroImage !== 'string'
-                          ? previousPost.heroImage
-                          : typeof previousPost.meta?.image !== 'string'
-                            ? previousPost.meta?.image
-                            : undefined
-                      }
-                      fill
-                      size="80px"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display text-h5 text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                    {previousPost.title}
-                  </h3>
-                </div>
-              </div>
-            </Link>
-          ) : (
-            <div className="h-full opacity-0">
-              {/* Spacer to maintain grid alignment */}
-            </div>
-          )}
-        </div>
-
-        {/* Next Post */}
-        <div className="md:pl-8 md:border-l border-border">
-          {nextPost ? (
-            <Link
-              href={`/${nextPost.slug}`}
-              className="group flex flex-col h-full hover:opacity-80 transition-opacity"
-            >
-              <div className="flex items-center justify-end gap-2 text-caption text-muted-foreground mb-3">
-                <span className="uppercase tracking-wider">Article suivant</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-              <div className="flex gap-4 items-start flex-row-reverse">
-                {(nextPost.heroImage || nextPost.meta?.image) && (
-                  <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded">
-                    <Media
-                      resource={
-                        typeof nextPost.heroImage !== 'string'
-                          ? nextPost.heroImage
-                          : typeof nextPost.meta?.image !== 'string'
-                            ? nextPost.meta?.image
-                            : undefined
-                      }
-                      fill
-                      size="80px"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0 text-right">
-                  <h3 className="font-display text-h5 text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                    {nextPost.title}
-                  </h3>
-                </div>
-              </div>
-            </Link>
-          ) : (
-            <div className="h-full opacity-0">
-              {/* Spacer to maintain grid alignment */}
-            </div>
-          )}
-        </div>
-      </div>
+    <nav aria-label="Autres articles" className="grid border-y border-line md:grid-cols-2">
+      {older ? <Voisin post={older} label="Plus ancien" /> : <span aria-hidden="true" />}
+      {newer && (
+        <Voisin post={newer} label="Plus récent" className="border-t md:border-l md:border-t-0" />
+      )}
     </nav>
+  )
+}
+
+function Voisin({
+  post,
+  label,
+  className,
+}: {
+  post: VoisinPost
+  label: string
+  className?: string
+}) {
+  const image =
+    post.heroImage && typeof post.heroImage === 'object'
+      ? post.heroImage
+      : post.meta?.image && typeof post.meta.image === 'object'
+        ? post.meta.image
+        : null
+
+  return (
+    <Link
+      href={`/${post.slug}`}
+      className={cn('group flex items-start gap-5 border-line py-8 md:px-8', className)}
+    >
+      {image && (
+        <div className="relative size-20 shrink-0 overflow-hidden bg-muted md:size-24">
+          <Media resource={image} fill size="96px" />
+        </div>
+      )}
+      <div>
+        <p className="font-sans font-condensed text-[0.9375rem] font-semibold text-sauge-ink">
+          {label}
+        </p>
+        <p className="mt-1.5 font-serif text-h4 text-ink text-pretty group-hover:underline group-hover:decoration-sauge group-hover:decoration-[1.5px] group-hover:underline-offset-4">
+          {post.title}
+        </p>
+      </div>
+    </Link>
   )
 }

@@ -53,7 +53,7 @@ export const EmbedBlock: React.FC<Props> = (props) => {
         className,
       )}
     >
-      <div className="relative w-full overflow-hidden rounded-lg" style={{ paddingTop: '56.25%' }}>
+      <div className="relative aspect-video w-full overflow-hidden bg-muted">
         <iframe
           className="absolute inset-0 h-full w-full border-0"
           src={embedUrl}
