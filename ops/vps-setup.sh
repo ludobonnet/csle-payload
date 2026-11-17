@@ -2,13 +2,17 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 # Installation de csle sur le VPS (idempotent). À lancer en root depuis un dossier contenant :
-# deploy.pub (clé CI préfixée restrict,port-forwarding,permitopen="127.0.0.1:5432"), csle-deploy.sh,
+# deploy.pub (clé publique CI brute), csle-deploy.sh,
 # csle-front.service, front.env.example, postgres-setup.sql. Rien n'y touche aux services LSAN.
 # Utilisateurs
 useradd --system --no-create-home --shell /usr/sbin/nologin csle-front 2>/dev/null || true
 id csle-deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash csle-deploy
 install -d -m700 -o csle-deploy -g csle-deploy /home/csle-deploy/.ssh
-install -m600 -o csle-deploy -g csle-deploy deploy.pub /home/csle-deploy/.ssh/authorized_keys
+# Options imposées ici (et non dans deploy.pub) : shell + rsync, tunnel vers Postgres seul, rien d'autre
+key=$(grep -oE '(ssh-ed25519|ssh-rsa|ecdsa-[^ ]+) [A-Za-z0-9+/=]+' deploy.pub)
+( umask 077; printf 'restrict,port-forwarding,permitopen="127.0.0.1:5432" %s csle-deploy-ci\n' "$key" \
+    > /home/csle-deploy/.ssh/authorized_keys )
+chown csle-deploy:csle-deploy /home/csle-deploy/.ssh/authorized_keys
 # Arborescence
 install -d -m755 -o root -g root /srv/csle
 # Propriété csle-deploy : deploy.sh y écrit le lien `current` (piège constaté côté LSAN, runbook §2.2)
