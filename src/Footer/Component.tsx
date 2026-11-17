@@ -184,6 +184,10 @@ export async function Footer() {
             </div>
 
             <div className="text-caption text-white/40">
+              <Link href="/contact" className="hover:text-white/60 transition-colors">
+                Contact
+              </Link>
+              <span className="mx-2">·</span>
               <Link href="/mentions-legales" className="hover:text-white/60 transition-colors">
                 Mentions légales
               </Link>

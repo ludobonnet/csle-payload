@@ -19,7 +19,7 @@ test.describe('Site public', () => {
     expect(await page.locator('article img, main img').count()).toBeGreaterThan(1)
 
     await page.goto('/une-cartouche-sur-la-scene')
-    await expect(page.locator('iframe[src*="youtube.com/embed"], iframe[src*="dailymotion"], iframe[src*="vimeo"]').first()).toBeAttached()
+    await expect(page.locator('iframe[src*="youtube-nocookie.com/embed"], iframe[src*="dailymotion"], iframe[src*="vimeo"]').first()).toBeAttached()
   })
 
   test('catégorie servie à la racine', async ({ page }) => {
@@ -47,5 +47,36 @@ test.describe('Site public', () => {
 
   test('la route de seed du template n’existe plus', async ({ request }) => {
     expect((await request.post('/next/seed', { maxRedirects: 0 })).status()).not.toBe(200)
+  })
+})
+
+test.describe('Pages légales et contact', () => {
+  for (const [url, title] of [
+    ['/mentions-legales', 'Mentions légales - CSLE'],
+    ['/confidentialite', 'Confidentialité - CSLE'],
+    ['/contact', 'Contact - CSLE'],
+  ]) {
+    test(`${url} existe et est liée depuis le pied de page`, async ({ page }) => {
+      const response = await page.goto(url)
+      expect(response?.status()).toBe(200)
+      await expect(page).toHaveTitle(title)
+      await expect(page.locator(`footer a[href="${url}"]`)).toBeVisible()
+    })
+  }
+
+  test('mentions légales : éditeur et hébergeur', async ({ page }) => {
+    await page.goto('/mentions-legales')
+    await expect(page.getByText('Ludovic Bonnet', { exact: false }).first()).toBeVisible()
+    await expect(page.getByText('PulseHeberg', { exact: false })).toBeVisible()
+  })
+
+  test('anciennes pages WordPress redirigées', async ({ request }) => {
+    const cgu = await request.get('/cgu', { maxRedirects: 0 })
+    expect(cgu.headers().location).toBe('/mentions-legales')
+  })
+
+  test('vidéos YouTube sans cookie', async ({ page }) => {
+    await page.goto('/une-cartouche-sur-la-scene')
+    expect(await page.locator('iframe[src*="www.youtube.com/embed"]').count()).toBe(0)
   })
 })

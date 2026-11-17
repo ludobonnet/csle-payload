@@ -9,10 +9,11 @@ type Props = EmbedBlockProps & {
 
 function getEmbedUrl(provider: string, embedId: string): string {
   switch (provider) {
+    // Sans cookie avant lecture (CNIL) : pas de bandeau de consentement nécessaire
     case 'youtube':
-      return `https://www.youtube.com/embed/${embedId}`
+      return `https://www.youtube-nocookie.com/embed/${embedId}`
     case 'vimeo':
-      return `https://player.vimeo.com/video/${embedId}`
+      return `https://player.vimeo.com/video/${embedId}?dnt=1`
     case 'dailymotion':
       return `https://www.dailymotion.com/embed/video/${embedId}`
     default:
@@ -56,7 +57,8 @@ export const EmbedBlock: React.FC<Props> = (props) => {
         <iframe
           className="absolute inset-0 h-full w-full border-0"
           src={embedUrl}
-          title={`${providerName} video player`}
+          title={`Vidéo ${providerName}`}
+          loading="lazy"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />

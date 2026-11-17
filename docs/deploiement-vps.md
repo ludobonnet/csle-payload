@@ -60,7 +60,10 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
 - [x] Site public entièrement dynamique (build sans base).
 - [x] Identité CSLE : logo typographique, titres « Titre - CSLE », méta OG (og:url corrigé), 404 en français.
 - [x] 404 des URLs à plusieurs segments (`/a/b`) via `[slug]/[...rest]`.
-- [ ] **Mentions légales** à réécrire (la page `cgu` de WordPress est celle de casentlete.fr : éditeur, hébergeur OVH, plateforme sport). `partenaires` (2 liens d'échange de 2012) : abandonnée sauf avis contraire.
+- [x] Pages `/mentions-legales` (blog personnel, éditeur Ludovic Bonnet, hébergeur PulseHeberg + Cloudflare), `/confidentialite`, `/contact` (formulaire Tally) ; `/cgu` → mentions légales, `/partenaires` → accueil.
+- [x] Vidéos sans cookie avant lecture (`youtube-nocookie.com`, Vimeo `dnt=1`) et chargées à la demande : pas de bandeau cookies nécessaire.
+- [ ] **Formulaire Tally à créer**, puis renseigner `TALLY_FORM_ID` dans `src/utilities/site.ts` (sans lui, `/contact` affiche « bientôt disponible »).
+- [ ] Icônes Instagram/Twitter/Facebook du pied de page : liens génériques à remplacer par de vrais comptes ou à retirer.
 - [x] Redirections des 2 articles vides vers `/humour` (`redirects.js`).
 - [x] Sitemap : accueil, archive, catégories non vides (racine) ; recherche exclue.
 - [ ] SEO : contrôler les URLs indexées de l'ancien site (Search Console) contre les slugs actuels ; décider du sort de « Non classé ».
