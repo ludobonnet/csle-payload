@@ -111,7 +111,7 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
       identifiants étant lus depuis le VPS en variables d'environnement : 9 613 objets, 886 Mio, à la racine
       (préfixe vide en base), `rclone check` : 0 différence, types MIME corrects.
 - [ ] Domaine public `images.csle.fr` sur le bucket (dès que la zone est active).
-- [ ] Tunnel : hostnames `csle.fr`, `www.csle.fr` → `http://localhost:3020` ; redirection apex/www ; Access sur `csle.fr/admin*` (Ludo, Sandrine).
+- [ ] Tunnel : hostnames `csle.fr`, `www.csle.fr` → `http://localhost:3020` ; redirection apex/www ; pas de Cloudflare Access sur `/admin` (décision 2026-11-17 : l'authentification Payload suffit).
 - [ ] Sauvegarde quotidienne de `csle` + test de restauration.
 
 ## Lot 3 — Bascule
