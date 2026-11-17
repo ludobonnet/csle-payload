@@ -3,6 +3,8 @@ dist / media
 node_modules
 .DS_Store
 .env
+.env.*
+!.env.example
 .next
 .vercel
 
@@ -20,3 +22,4 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 tsconfig.tsbuildinfo
+scripts/migrate/conversion-report.json

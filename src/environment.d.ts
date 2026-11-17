@@ -4,7 +4,14 @@ declare global {
       PAYLOAD_SECRET: string
       DATABASE_URL: string
       NEXT_PUBLIC_SERVER_URL: string
-      VERCEL_PROJECT_PRODUCTION_URL: string
+      CRON_SECRET?: string
+      PREVIEW_SECRET?: string
+      // Médias sur R2 (absents en dev : stockage disque)
+      R2_ENDPOINT?: string
+      R2_MEDIA_ACCESS_KEY_ID?: string
+      R2_MEDIA_SECRET_ACCESS_KEY?: string
+      R2_MEDIA_BUCKET?: string
+      MEDIA_PUBLIC_BASE_URL?: string
     }
   }
 }

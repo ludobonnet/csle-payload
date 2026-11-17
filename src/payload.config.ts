@@ -61,7 +61,12 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
+      // Serveur Postgres partagé avec LSAN (max_connections = 100) : budget borné
+      max: Number(process.env.DATABASE_POOL_MAX) || 5,
     },
+    // Schéma piloté uniquement par les migrations (src/migrations), en dev comme en prod :
+    // le rôle runtime de prod n'a pas le droit de modifier le schéma.
+    push: false,
   }),
   collections: [Pages, Posts, Media, Categories, Tags, Users],
   cors: [getServerSideURL()].filter(Boolean),
