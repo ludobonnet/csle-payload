@@ -1,21 +1,42 @@
 import type { Metadata } from 'next'
 
 import { cn } from '@/utilities/ui'
-import { Playfair_Display, Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import React from 'react'
 import Script from 'next/script'
 
-// Editorial serif for headings - elegant, magazine-style
-const playfair = Playfair_Display({
-  subsets: ['latin'],
+// Polices auto-hébergées depuis npm (Fontsource) : aucun appel à Google, ni au build ni chez le visiteur.
+// Sous-ensemble latin (couvre le français, œ compris), fontes variables. Chemins littéraux : next/font les lit au build.
+// Serif éditoriale pour les titres
+const playfair = localFont({
+  src: [
+    {
+      path: '../../../node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2',
+      style: 'normal',
+    },
+    {
+      path: '../../../node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-italic.woff2',
+      style: 'italic',
+    },
+  ],
+  weight: '400 900',
   variable: '--font-playfair',
   display: 'swap',
-  weight: ['400', '500', '600', '700'],
 })
 
-// Modern sans-serif for body text - highly readable
-const inter = Inter({
-  subsets: ['latin'],
+// Sans-serif lisible pour le texte
+const inter = localFont({
+  src: [
+    {
+      path: '../../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2',
+      style: 'normal',
+    },
+    {
+      path: '../../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-italic.woff2',
+      style: 'italic',
+    },
+  ],
+  weight: '100 900',
   variable: '--font-inter',
   display: 'swap',
 })
