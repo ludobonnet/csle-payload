@@ -1,0 +1,150 @@
+# Déploiement de csle.fr sur le VPS LSAN (prod seule).
+# push main → contrôles → build standalone → rsync → bascule → sonde.
+#
+# La CI n'a AUCUN accès à la base : le site public est rendu à la requête et les
+# migrations s'appliquent au démarrage du service (prodMigrations).
+#
+# Environnement GitHub « prod » :
+#   secrets : SSH_KEY (clé privée de csle-deploy), SSH_KNOWN_HOSTS, SSH_HOST
+#   variables : SITE_URL (https://csle.fr), MEDIA_PUBLIC_BASE_URL (https://images.csle.fr)
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  RELEASES: /srv/csle/front/releases
+  PORT: '3005'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+      # Tests sans base : convertisseurs de migration
+      - run: pnpm exec vitest run scripts
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Vérifie la configuration
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          MEDIA_PUBLIC_BASE_URL: ${{ vars.MEDIA_PUBLIC_BASE_URL }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          missing=""
+          for v in SITE_URL MEDIA_PUBLIC_BASE_URL SSH_KEY SSH_KNOWN_HOSTS SSH_HOST; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          [ -z "$missing" ] || { echo "::error title=Configuration incomplète::manquant :$missing"; exit 1; }
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Restaure le cache Next
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: next-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Build
+        env:
+          # Figées dans le bundle : URL publique du site et domaine des images
+          NEXT_PUBLIC_SERVER_URL: ${{ vars.SITE_URL }}
+          MEDIA_PUBLIC_BASE_URL: ${{ vars.MEDIA_PUBLIC_BASE_URL }}
+          # Le build ne se connecte pas à la base : valeurs factices volontaires
+          DATABASE_URL: postgresql://build:unused@127.0.0.1:1/none
+          PAYLOAD_SECRET: build-only-not-a-secret
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: pnpm build
+
+      - name: Assemble l'artefact
+        run: |
+          set -euo pipefail
+          out=.next/standalone
+          [ -f "$out/server.js" ] || { echo "standalone absent" >&2; exit 1; }
+          cp -r .next/static "$out/.next/static"
+          # public/ sans les médias (servis par R2)
+          rsync -a --exclude media/ public/ "$out/public/"
+          # Jamais de .env dans l'artefact
+          find "$out" -maxdepth 1 -name '.env*' -print -delete
+          echo "artefact : $(du -sh "$out" | cut -f1)"
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host vps
+            HostName $SSH_HOST
+            User csle-deploy
+            IdentityFile ~/.ssh/id_deploy
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            ServerAliveInterval 30
+          EOF
+          ssh vps true
+
+      - name: Pousse la release
+        run: |
+          set -euo pipefail
+          ssh vps "mkdir -p $RELEASES/$GITHUB_SHA"
+          rsync -az --delete .next/standalone/ "vps:$RELEASES/$GITHUB_SHA/"
+
+      - name: Bascule et vérifie
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          set -euo pipefail
+          ssh vps "/srv/csle/deploy.sh $GITHUB_SHA"
+          host=$(printf '%s' "$SITE_URL" | sed -E 's#^https?://##; s#/.*##')
+          for _ in $(seq 1 45); do
+            code=$(ssh vps "curl -s -o /dev/null -w '%{http_code}' --max-time 5 -H 'Host: $host' http://127.0.0.1:$PORT/" || true)
+            case "$code" in 2*|3*) echo "csle.fr OK (HTTP $code)"; exit 0 ;; esac
+            sleep 2
+          done
+          echo "::error title=Sonde en échec::le service ne répond pas (dernier code : $code). Rollback : ssh vps /srv/csle/deploy.sh <sha-précédent>"
+          exit 1

@@ -15,6 +15,7 @@ import { Header } from './Header/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
+import { migrations } from './migrations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -56,9 +57,12 @@ export default buildConfig({
       // Serveur Postgres partagé avec LSAN (max_connections = 100) : budget borné
       max: Number(process.env.DATABASE_POOL_MAX) || 5,
     },
-    // Schéma piloté uniquement par les migrations (src/migrations), en dev comme en prod :
-    // le rôle runtime de prod n'a pas le droit de modifier le schéma.
+    // Schéma piloté uniquement par les migrations (src/migrations), en dev comme en prod.
     push: false,
+    // En prod, les migrations en attente s'appliquent au démarrage du service : le build
+    // standalone n'embarque pas la CLI et la CI n'a pas accès à la base. Le rôle Postgres
+    // de l'application est donc propriétaire de la base `csle` (et de rien d'autre).
+    prodMigrations: migrations,
   }),
   collections: [Pages, Posts, Media, Categories, Tags, Users],
   cors: [getServerSideURL()].filter(Boolean),
