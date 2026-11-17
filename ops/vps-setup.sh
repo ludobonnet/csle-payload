@@ -1,23 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
-sudoers_tmp=""
 # Installation de csle sur le VPS (idempotent). À lancer en root depuis un dossier contenant :
 # deploy.pub (clé publique CI brute), csle-deploy.sh,
 # csle-front.service, front.env.example, postgres-setup.sql. Rien n'y touche aux services LSAN.
 # Utilisateurs
 useradd --system --no-create-home --shell /usr/sbin/nologin csle-front 2>/dev/null || true
 id csle-deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash csle-deploy
-install -d -m700 -o csle-deploy -g csle-deploy /home/csle-deploy/.ssh
-# Options imposées ici (et non dans deploy.pub) : shell + rsync, tunnel vers Postgres seul, rien d'autre
 keys=$(grep -oE '(ssh-ed25519|ssh-rsa|ecdsa-[^ ]+) [A-Za-z0-9+/=]+' deploy.pub)
 [ "$(printf '%s\n' "$keys" | grep -c .)" -eq 1 ] || { echo "deploy.pub doit contenir exactement une clé" >&2; exit 1; }
-# ~/.ssh appartient à csle-deploy : on ne suit jamais un lien qu'il y aurait posé (rm puis install)
-ak_tmp=$(mktemp); trap 'rm -f "$sudoers_tmp" "$ak_tmp"' EXIT
-printf 'restrict,port-forwarding,permitopen="127.0.0.1:5432" %s csle-deploy-ci\n' "$keys" > "$ak_tmp"
-[ ! -L /home/csle-deploy/.ssh ] || { echo "~csle-deploy/.ssh est un lien : arrêt" >&2; exit 1; }
-rm -f /home/csle-deploy/.ssh/authorized_keys
-install -m600 -o csle-deploy -g csle-deploy "$ak_tmp" /home/csle-deploy/.ssh/authorized_keys
+# ~/.ssh appartient à csle-deploy : écrit EN TANT QUE csle-deploy, jamais en root,
+# pour qu'un lien symbolique posé là ne donne aucun droit de plus que les siens.
+printf 'restrict,port-forwarding,permitopen="127.0.0.1:5432" %s csle-deploy-ci\n' "$keys" \
+  | runuser -u csle-deploy -- sh -c 'umask 077; mkdir -p "/home/csle-deploy/.ssh" && cat > "/home/csle-deploy/.ssh/authorized_keys.new" && mv -f "/home/csle-deploy/.ssh/authorized_keys.new" "/home/csle-deploy/.ssh/authorized_keys"'
 # Arborescence
 install -d -m755 -o root -g root /srv/csle
 # Propriété csle-deploy : deploy.sh y écrit le lien `current` (piège constaté côté LSAN, runbook §2.2)
@@ -26,7 +21,7 @@ install -d -m750 -o csle-deploy -g csle-front /srv/csle/front/releases
 install -d -m750 -o csle-front -g csle-front /srv/csle/front/cache
 install -m750 -o csle-deploy -g csle-deploy csle-deploy.sh /srv/csle/deploy.sh
 # Sudoers
-sudoers_tmp=$(mktemp)
+sudoers_tmp=$(mktemp); trap 'rm -f "$sudoers_tmp"' EXIT
 echo 'csle-deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart csle-front' > "$sudoers_tmp"
 visudo -cf "$sudoers_tmp"
 install -m440 -o root -g root "$sudoers_tmp" /etc/sudoers.d/csle-deploy
