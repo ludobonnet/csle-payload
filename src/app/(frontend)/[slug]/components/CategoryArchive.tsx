@@ -30,6 +30,8 @@ export async function CategoryArchive({ category, page = 1 }: Props) {
       slug: true,
       categories: true,
       meta: true,
+      heroImage: true,
+      publishedAt: true,
     },
   })
 
@@ -43,7 +45,6 @@ export async function CategoryArchive({ category, page = 1 }: Props) {
 
       <div className="container mb-8">
         <PageRange
-          collection="posts"
           currentPage={posts.page}
           limit={12}
           totalDocs={posts.totalDocs}
