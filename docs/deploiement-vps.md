@@ -60,7 +60,8 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
 - [x] 404 des URLs à plusieurs segments (`/a/b`) via `[slug]/[...rest]`.
 - [ ] **Mentions légales** à réécrire (la page `cgu` de WordPress est celle de casentlete.fr : éditeur, hébergeur OVH, plateforme sport). `partenaires` (2 liens d'échange de 2012) : abandonnée sauf avis contraire.
 - [x] Redirections des 2 articles vides vers `/humour` (`redirects.js`).
-- [ ] SEO : catégories dans le sitemap, méta, contrôle des URLs `/{slug}` contre la liste WordPress.
+- [x] Sitemap : accueil, archive, catégories non vides (racine) ; recherche exclue.
+- [ ] SEO : contrôler les URLs indexées de l'ancien site (Search Console) contre les slugs actuels ; décider du sort de « Non classé ».
 - [x] Images : qualité 75, `sizes` réels, recadrage `object-cover` en mode fill (images déformées auparavant).
 - [x] Vidéos : bloc `embed` branché dans le rendu RichText (les 198 vidéos étaient invisibles).
 - [ ] (Option) `@payloadcms/email-resend` depuis `csle@send.bonnet.pro` pour la réinitialisation de mot de passe.
