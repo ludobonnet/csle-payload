@@ -106,7 +106,11 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
       `umami`, `csle` ; `csle_app` : connexion à `lsan` refusée, DDL refusé.
 - [x] `/etc/csle/front.env` (640 root:csle-front, secrets générés, R2 à compléter) ; unit `csle-front` activée,
       pas encore démarrée (aucune release).
-- [ ] Bucket R2 `csle-media` + domaine `images.csle.fr` + jeton dédié ; copie de `public/media` (905 Mo, 9 613 fichiers) avec `rclone`, noms conservés, à la racine du bucket.
+- [x] Bucket R2 `csle-media` et jeton dédié (créés par Ludo) ; identifiants saisis directement dans
+      `/etc/csle/front.env`, jamais ailleurs. Copie de `public/media` le 2026-11-17 avec rclone, les
+      identifiants étant lus depuis le VPS en variables d'environnement : 9 613 objets, 886 Mio, à la racine
+      (préfixe vide en base), `rclone check` : 0 différence, types MIME corrects.
+- [ ] Domaine public `images.csle.fr` sur le bucket (dès que la zone est active).
 - [ ] Tunnel : hostnames `csle.fr`, `www.csle.fr` → `http://localhost:3020` ; redirection apex/www ; Access sur `csle.fr/admin*` (Ludo, Sandrine).
 - [ ] Sauvegarde quotidienne de `csle` + test de restauration.
 
