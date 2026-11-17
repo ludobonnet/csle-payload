@@ -113,7 +113,7 @@ describe('processShortcodes - naked video URLs', () => {
   describe('Mixed content', () => {
     it('converts multiple naked URLs in separate paragraphs', () => {
       const input = `<p>Intro text</p>
-<p>https://www.youtube.com/watch?v=abc123def</p>
+<p>https://www.youtube.com/watch?v=abc123def45</p>
 <p>Some text between</p>
 <p>https://vimeo.com/987654321</p>
 <p>Outro text</p>`
@@ -121,7 +121,7 @@ describe('processShortcodes - naked video URLs', () => {
       const result = processShortcodes(input)
 
       expect(result).toContain('<p>Intro text</p>')
-      expect(result).toContain('data-embed="youtube" data-embed-id="abc123def"')
+      expect(result).toContain('data-embed="youtube" data-embed-id="abc123def45"')
       expect(result).toContain('<p>Some text between</p>')
       expect(result).toContain('data-embed="vimeo" data-embed-id="987654321"')
       expect(result).toContain('<p>Outro text</p>')
@@ -134,5 +134,44 @@ describe('processShortcodes - naked video URLs', () => {
         '<div data-embed="youtube" data-embed-id="skxMuxO3WcE" data-embed-url="https://www.youtube.com/watch?v=skxMuxO3WcE"></div>'
       )
     })
+  })
+})
+
+describe('processShortcodes - formes héritées du WordPress csle', () => {
+  it('convertit la forme encadrante [youtube]URL[/youtube]', () => {
+    const result = processShortcodes('<p>[youtube]https://www.youtube.com/watch?v=iXjNFy4PPIQ[/youtube]</p>')
+    expect(result).toContain('data-embed="youtube" data-embed-id="iXjNFy4PPIQ"')
+    expect(result).not.toContain('[/youtube]')
+  })
+
+  it('convertit la forme encadrante [vimeo]URL[/vimeo]', () => {
+    const result = processShortcodes('[vimeo]https://vimeo.com/42403297[/vimeo]')
+    expect(result).toContain('data-embed="vimeo" data-embed-id="42403297"')
+    expect(result).not.toContain('[/vimeo]')
+  })
+
+  it('convertit [su_youtube url=...]', () => {
+    const result = processShortcodes('[su_youtube url="https://www.youtube.com/watch?v=y15eqHJmUBQ"]')
+    expect(result).toContain('data-embed="youtube" data-embed-id="y15eqHJmUBQ"')
+  })
+
+  it('remplace [appbox googleplay ...] par un lien Google Play', () => {
+    expect(processShortcodes('[appbox googleplay screenshots com.microsoft.wordament]')).toBe(
+      '<p><a href="https://play.google.com/store/apps/details?id=com.microsoft.wordament">Voir l’application sur Google Play</a></p>',
+    )
+  })
+
+  it('remplace [videojs mp4=...] par un lien vers la vidéo', () => {
+    expect(processShortcodes('[videojs mp4="https://exemple.com/teaser.mp4"]')).toBe(
+      '<p><a href="https://exemple.com/teaser.mp4">Voir la vidéo</a></p>',
+    )
+  })
+
+  it('supprime [appbox windowsphone ...] (store fermé)', () => {
+    expect(processShortcodes('[appbox windowsphone f07f83eb-a8a4-49fd-8946-c67a9349e062]')).toBe('')
+  })
+
+  it('supprime les sondages [polldaddy]', () => {
+    expect(processShortcodes('<p>Avant</p>[polldaddy poll=9053488]')).toBe('<p>Avant</p>')
   })
 })

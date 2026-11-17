@@ -32,6 +32,19 @@ function slugify(title: string): string {
     .substring(0, 100) // Limit length
 }
 
+/**
+ * Date WordPress → ISO. Les brouillons ont une date GMT « 0000-00-00 » (Date
+ * invalide côté mysql2) : on se rabat alors sur la date locale.
+ */
+function toISO(...candidates: Array<Date | string | null | undefined>): string | undefined {
+  for (const value of candidates) {
+    if (!value) continue
+    const date = new Date(value)
+    if (!Number.isNaN(date.getTime())) return date.toISOString()
+  }
+  return undefined
+}
+
 export interface PostMigrationResult {
   created: number
   skipped: number
@@ -64,16 +77,28 @@ export async function migratePosts(
   let failed = 0
   const conversionErrors: Array<{ wpId: number; slug: string; errors: string[] }> = []
 
-  // Query WordPress posts (only published)
+  // Articles publiés + brouillons (repris en brouillon, les vides sont ignorés plus bas)
   const posts = await query<WPPost>(`
     SELECT *
     FROM ${wpTable('posts')}
     WHERE post_type = 'post'
-      AND post_status = 'publish'
+      AND post_status IN ('publish', 'draft')
     ORDER BY post_date ASC
   `)
 
   info(`Found ${posts.length} posts in WordPress`)
+
+  // [gallery] sans ids = toutes les images rattachées à l'article, dans l'ordre WordPress
+  const attachments = await query<{ ID: number; post_parent: number }>(`
+    SELECT ID, post_parent
+    FROM ${wpTable('posts')}
+    WHERE post_type = 'attachment' AND post_parent > 0 AND post_mime_type LIKE 'image/%'
+    ORDER BY post_parent, menu_order, ID
+  `)
+  const attachmentsByPost = new Map<number, number[]>()
+  for (const { ID, post_parent } of attachments) {
+    attachmentsByPost.set(post_parent, [...(attachmentsByPost.get(post_parent) || []), ID])
+  }
 
   // Query all term relationships at once for efficiency
   const termRelationships = await query<TermRelationshipRow>(`
@@ -145,7 +170,11 @@ export async function migratePosts(
         }
 
         // Convert HTML content to Lexical
-        const { lexical, unresolvedImages } = await convertHtmlToLexical(post.post_content)
+        const attachedIds = attachmentsByPost.get(post.ID) || []
+        const html = post.post_content.replace(/\[gallery(?![^\]]*\b(?:ids|include)=)/gi, () =>
+          attachedIds.length ? `[gallery ids="${attachedIds.join(',')}"` : '[gallery',
+        )
+        const { lexical, unresolvedImages } = await convertHtmlToLexical(html)
 
         // Check if content is effectively empty
         if (isLexicalContentEmpty(lexical)) {
@@ -205,9 +234,9 @@ export async function migratePosts(
             authors,
             categories,
             tags,
-            publishedAt: post.post_date_gmt ? new Date(post.post_date_gmt).toISOString() : undefined,
-            createdAt: post.post_date_gmt ? new Date(post.post_date_gmt).toISOString() : undefined,
-            updatedAt: post.post_modified_gmt ? new Date(post.post_modified_gmt).toISOString() : undefined,
+            publishedAt: toISO(post.post_date_gmt, post.post_date),
+            createdAt: toISO(post.post_date_gmt, post.post_date),
+            updatedAt: toISO(post.post_modified_gmt, post.post_modified),
             _status: status,
             meta: {
               title: decode(post.post_title),

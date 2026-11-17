@@ -412,8 +412,52 @@ function removeUnsupportedShortcodes(content: string): string {
 /**
  * Process all shortcodes in content
  */
+/**
+ * Formes propres aux plugins du WordPress csle, ramenées aux formes gérées
+ * plus bas, ou remplacées par un lien quand aucun bloc n'existe.
+ */
+function processLegacyShortcodes(content: string): string {
+  // [youtube]URL[/youtube] → [youtube URL] (idem vimeo, dailymotion)
+  content = content.replace(
+    /\[(youtube|vimeo|dailymotion)\]\s*([^[\s]+)\s*\[\/\1\]/gi,
+    (_match, provider: string, url: string) => `[${provider.toLowerCase()} ${url}]`,
+  )
+
+  // Shortcodes Ultimate : [su_youtube url="…"] → [youtube url="…"]
+  content = content.replace(/\[su_(youtube|vimeo)(\s[^\]]*)\]/gi, '[$1$2]')
+  content = content.replace(/\[\/su_(youtube|vimeo)\]/gi, '')
+
+  // App Box : plus de fiche intégrée, un lien vers le store suffit
+  content = content.replace(
+    /\[appbox\s+googleplay\s+(?:screenshots\s+)?([\w.]+)[^\]]*\]/gi,
+    (_match, appId: string) =>
+      `<p><a href="https://play.google.com/store/apps/details?id=${appId}">Voir l’application sur Google Play</a></p>`,
+  )
+  content = content.replace(
+    /\[appbox\s+appstore\s+(?:screenshots\s+)?(?:id)?(\d+)[^\]]*\]/gi,
+    (_match, appId: string) =>
+      `<p><a href="https://apps.apple.com/fr/app/id${appId}">Voir l’application sur l’App Store</a></p>`,
+  )
+
+  // Windows Phone Store : fermé, rien à lier
+  content = content.replace(/\[appbox\s+windowsphone[^\]]*\]/gi, '')
+
+  // Video.js : pas de bloc vidéo externe, on garde un lien
+  content = content.replace(
+    /\[videojs[^\]]*\bmp4=["']?([^"'\s\]]+)["']?[^\]]*\]/gi,
+    (_match, url: string) => `<p><a href="${url}">Voir la vidéo</a></p>`,
+  )
+
+  // Sondages Polldaddy : le service n'existe plus sous cette forme
+  content = content.replace(/\[polldaddy[^\]]*\]/gi, '')
+
+  return content
+}
+
 export function processShortcodes(content: string): string {
   // Order matters - process nested shortcodes from inside out
+
+  content = processLegacyShortcodes(content)
 
   // First: Handle naked video URLs (WordPress oEmbed pattern)
   // These are URLs alone on a line that WordPress auto-embeds

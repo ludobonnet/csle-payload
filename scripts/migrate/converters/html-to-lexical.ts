@@ -330,6 +330,67 @@ function insertEmbedBlocks(
   }
 }
 
+/**
+ * Remplace chaque <img> du DOM par un paragraphe-repère qui deviendra un bloc
+ * média au niveau racine.
+ *
+ * Indispensable : l'éditeur headless n'enregistre aucun nœud image, donc
+ * $generateNodesFromDOM jette silencieusement les <img>. Un bloc média ne peut
+ * pas vivre dans un paragraphe : l'image est sortie de son conteneur de premier
+ * niveau et placée juste avant lui (le texte qui l'entourait est conservé).
+ * Une légende de <figure> devient un paragraphe en italique sous l'image.
+ */
+function extractImagesAsPlaceholders(
+  document: Document,
+  placeholders: Array<{ placeholder: string; node: SerializedBlockNode }>,
+  unresolvedImages: Array<{ src: string; wpId: number | null }>,
+): void {
+  const body = document.body
+
+  for (const img of Array.from(body.querySelectorAll('img'))) {
+    const src = img.getAttribute('src') || ''
+    const galleryMatch = src.match(/^\/media\/(\d+)$/) // posé par le résolveur de galerie
+    const wpId = extractWPAttachmentId(img)
+    const mediaId = galleryMatch ? Number(galleryMatch[1]) : resolveMediaId(src, wpId)
+
+    // Ce qu'on retire du flux : le lien qui n'enveloppe que l'image, ou la figure entière
+    let target: Element = img
+    const parent = img.parentElement
+    if (parent && parent.tagName === 'A' && parent.children.length === 1 && !parent.textContent?.trim()) {
+      target = parent
+    }
+    const figure = target.closest('figure')
+    const caption = figure?.querySelector('figcaption')?.textContent?.trim() || ''
+    if (figure) target = figure
+
+    let topLevel: Element = target
+    while (topLevel.parentElement && topLevel.parentElement !== body) topLevel = topLevel.parentElement
+
+    if (mediaId) {
+      const placeholder = `__MEDIA_PLACEHOLDER_${placeholders.length}__`
+      placeholders.push({ placeholder, node: createMediaBlockNode(mediaId) })
+      const p = document.createElement('p')
+      p.textContent = placeholder
+      body.insertBefore(p, topLevel)
+      if (caption) {
+        const captionP = document.createElement('p')
+        const em = document.createElement('em')
+        em.textContent = caption
+        captionP.appendChild(em)
+        body.insertBefore(captionP, topLevel)
+      }
+    } else {
+      unresolvedImages.push({ src, wpId })
+      debug('Unresolved image', { src, wpId })
+    }
+
+    target.remove()
+    if (topLevel !== target && !topLevel.textContent?.trim() && !topLevel.querySelector('img')) {
+      topLevel.remove()
+    }
+  }
+}
+
 // Type alias for the Lexical content structure used by Payload
 type LexicalContent = {
   root: {
@@ -423,6 +484,9 @@ export async function convertHtmlToLexical(html: string): Promise<{
   // Create JSDOM instance
   const dom = new JSDOM(`<!DOCTYPE html><body>${processedHtml}</body>`)
   const document = dom.window.document
+
+  // Images → repères de blocs média (remplacés comme les embeds après conversion)
+  extractImagesAsPlaceholders(document, embeds, unresolvedImages)
 
   // Create headless Lexical editor
   const editor = createHeadlessEditor({

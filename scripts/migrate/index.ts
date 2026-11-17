@@ -22,6 +22,7 @@
  */
 
 import 'dotenv/config'
+import { writeFileSync } from 'node:fs'
 import { getPayload } from 'payload'
 import config from '../../src/payload.config.js'
 import { closeConnection } from './utils/db.js'
@@ -109,6 +110,9 @@ async function main() {
       if (postResult.conversionErrors.length > 10) {
         info(`  ... and ${postResult.conversionErrors.length - 10} more`)
       }
+      const reportPath = 'scripts/migrate/conversion-report.json'
+      writeFileSync(reportPath, JSON.stringify(postResult.conversionErrors, null, 2))
+      info(`Rapport complet : ${reportPath}`)
     }
 
     success('\nMigration completed successfully!')

@@ -124,12 +124,8 @@ export async function verifyMigration(
   // Find posts without categories
   const postsWithoutCategories = await payload.find({
     collection: 'posts',
-    where: {
-      or: [
-        { categories: { exists: false } },
-        { categories: { equals: [] } },
-      ],
-    },
+    // `equals: []` sur une relation hasMany fait planter la requête Postgres (22P02)
+    where: { categories: { exists: false } },
     limit: 100,
   })
 

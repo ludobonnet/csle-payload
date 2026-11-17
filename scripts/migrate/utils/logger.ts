@@ -48,7 +48,11 @@ export function log(level: LogLevel, message: string, data?: unknown): void {
   let output = `${timestamp} ${levelStr} ${message}`
 
   if (data !== undefined) {
-    if (typeof data === 'object') {
+    if (data instanceof Error) {
+      // JSON.stringify(Error) donne « {} » : on expose le message et les détails Payload
+      const details = (data as Error & { data?: unknown }).data
+      output += ` ${colors.dim}${data.name}: ${data.message}${details ? ` ${JSON.stringify(details)}` : ''}${colors.reset}`
+    } else if (typeof data === 'object') {
       output += ` ${colors.dim}${JSON.stringify(data)}${colors.reset}`
     } else {
       output += ` ${colors.dim}${data}${colors.reset}`
