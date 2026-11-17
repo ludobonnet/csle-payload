@@ -27,8 +27,8 @@ export default function MentionsLegales() {
         <br />9 boulevard de Strasbourg, 83000 Toulon, France — +33 (0)4 22 14 13 60.
       </p>
       <p>
-        Images et diffusion du site : Cloudflare, Inc., 101 Townsend Street, San Francisco, CA 94107,
-        États-Unis.
+        Images et diffusion du site : Cloudflare, Inc., 101 Townsend Street, San Francisco, CA
+        94107, États-Unis.
       </p>
 
       <h2>Contenus</h2>

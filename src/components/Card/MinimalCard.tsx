@@ -1,67 +1,35 @@
 import { cn } from '@/utilities/ui'
 import Link from 'next/link'
-import React, { Fragment } from 'react'
+import React from 'react'
 
-import type { Post } from '@/payload-types'
+import { Media } from '@/components/Media'
+import { type CardPostData, imageOf, PostDate, RubriqueLabel, titleLinkClass } from './shared'
 
-export type MinimalCardPostData = Pick<Post, 'slug' | 'categories' | 'title' | 'publishedAt'>
-
+/** Ligne de sommaire : petite vignette, rubrique, titre, date. */
 export const MinimalCard: React.FC<{
   className?: string
-  doc?: MinimalCardPostData
+  doc?: CardPostData
   showCategories?: boolean
-}> = (props) => {
-  const { className, doc, showCategories } = props
-
-  const { slug, categories, title, publishedAt } = doc || {}
-
-  const hasCategories = categories && Array.isArray(categories) && categories.length > 0
-  const href = `/${slug}`
-
-  // Format date
-  const formattedDate = publishedAt
-    ? new Date(publishedAt).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null
+}> = ({ className, doc, showCategories = false }) => {
+  if (!doc) return null
+  const image = imageOf(doc)
 
   return (
-    <article
-      className={cn(
-        'group relative pl-4 border-l-2 border-primary hover:border-primary-hover transition-colors',
-        className,
-      )}
-    >
-      {showCategories && hasCategories && (
-        <div className="text-overline uppercase tracking-wider text-primary mb-2">
-          {categories?.map((category, index) => {
-            if (typeof category === 'object') {
-              const { title: categoryTitle } = category
-              const isLast = index === categories.length - 1
-
-              return (
-                <Fragment key={index}>
-                  {categoryTitle || 'Untitled'}
-                  {!isLast && <span>, </span>}
-                </Fragment>
-              )
-            }
-            return null
-          })}
+    <article className={cn('group relative flex items-start gap-4', className)}>
+      {image && (
+        <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden bg-muted md:w-32">
+          <Media resource={image} fill size="128px" />
         </div>
       )}
-
-      {title && (
-        <h3 className="font-display text-h4 text-foreground group-hover:text-primary transition-colors leading-snug">
-          <Link href={href} className="after:absolute after:inset-0 after:content-['']">
-            {title}
+      <div className="min-w-0">
+        {showCategories && <RubriqueLabel categories={doc.categories} className="mb-1" />}
+        <h3 className="font-serif text-[1.1875rem] leading-snug text-pretty text-ink">
+          <Link href={`/${doc.slug}`} className={titleLinkClass}>
+            {doc.title}
           </Link>
         </h3>
-      )}
-
-      {formattedDate && <p className="text-caption text-muted-foreground mt-2">{formattedDate}</p>}
+        <PostDate publishedAt={doc.publishedAt} className="mt-1.5" />
+      </div>
     </article>
   )
 }

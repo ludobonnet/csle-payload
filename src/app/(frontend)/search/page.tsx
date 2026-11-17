@@ -1,84 +1,102 @@
 import type { Metadata } from 'next/types'
 
-import { CollectionArchive } from '@/components/CollectionArchive'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
-import React from 'react'
+import Link from 'next/link'
+import React, { Suspense } from 'react'
+
+import { ArchiveHeader } from '@/components/ArchiveHeader'
+import { CollectionArchive } from '@/components/CollectionArchive'
 import { Search } from '@/search/Component'
-import PageClient from './page.client'
-import { CardPostData } from '@/components/Card'
+import { getRubriques } from '@/utilities/getRubriques'
 import { pageTitle } from '@/utilities/site'
+import PageClient from './page.client'
 
 type Args = {
   searchParams: Promise<{
-    q: string
+    q?: string
   }>
 }
+
+const MAX_RESULTS = 24
+
+/** Recherche dans les titres et les descriptions des articles publiés. */
 export default async function Page({ searchParams: searchParamsPromise }: Args) {
-  const { q: query } = await searchParamsPromise
+  const { q } = await searchParamsPromise
+  const query = q?.trim() ?? ''
   const payload = await getPayload({ config: configPromise })
 
-  const posts = await payload.find({
-    collection: 'search',
-    depth: 1,
-    limit: 12,
-    select: {
-      title: true,
-      slug: true,
-      categories: true,
-      meta: true,
-    },
-    // pagination: false reduces overhead if you don't need totalDocs
-    pagination: false,
-    ...(query
-      ? {
+  const [posts, rubriques, published] = await Promise.all([
+    query
+      ? payload.find({
+          collection: 'posts',
+          depth: 1,
+          limit: MAX_RESULTS,
+          sort: '-publishedAt',
+          overrideAccess: false,
           where: {
-            or: [
+            and: [
+              { _status: { equals: 'published' } },
               {
-                title: {
-                  like: query,
-                },
-              },
-              {
-                'meta.description': {
-                  like: query,
-                },
-              },
-              {
-                'meta.title': {
-                  like: query,
-                },
-              },
-              {
-                slug: {
-                  like: query,
-                },
+                or: [{ title: { like: query } }, { 'meta.description': { like: query } }],
               },
             ],
           },
-        }
-      : {}),
-  })
+          select: {
+            title: true,
+            slug: true,
+            categories: true,
+            meta: true,
+            heroImage: true,
+            publishedAt: true,
+          },
+        })
+      : null,
+    query ? Promise.resolve([]) : getRubriques(),
+    query
+      ? null
+      : payload.count({
+          collection: 'posts',
+          overrideAccess: false,
+          where: { _status: { equals: 'published' } },
+        }),
+  ])
+
+  const total = posts?.totalDocs ?? 0
+  const context = !query
+    ? `${(published?.totalDocs ?? 0).toLocaleString('fr-FR')} articles depuis 2008. Cherchez par lieu, par artiste, par sujet.`
+    : total === 0
+      ? `Aucun article ne correspond à « ${query} ». Essayez un mot plus court ou une autre orthographe.`
+      : total > MAX_RESULTS
+        ? `${total} articles correspondent à « ${query} ». Voici les ${MAX_RESULTS} plus récents.`
+        : `${total} article${total > 1 ? 's' : ''} pour « ${query} ».`
 
   return (
-    <div className="pt-24 pb-24">
+    <>
       <PageClient />
-      <div className="container mb-16">
-        <div className="prose dark:prose-invert max-w-none text-center">
-          <h1 className="mb-8 lg:mb-16">Search</h1>
+      <ArchiveHeader title="Recherche" context={context}>
+        <Suspense>
+          <Search />
+        </Suspense>
+      </ArchiveHeader>
 
-          <div className="max-w-[50rem] mx-auto">
-            <Search />
-          </div>
-        </div>
-      </div>
+      {posts && total > 0 && <CollectionArchive posts={posts.docs} />}
 
-      {posts.totalDocs > 0 ? (
-        <CollectionArchive posts={posts.docs as CardPostData[]} />
-      ) : (
-        <div className="container">No results found.</div>
+      {/* Sans recherche : les rubriques, pour feuilleter plutôt que chercher */}
+      {!query && rubriques.length > 0 && (
+        <nav aria-label="Rubriques" className="container">
+          <ul className="flex flex-wrap gap-x-8 gap-y-3 border-t border-line pt-8">
+            {rubriques.map((rubrique) => (
+              <li key={rubrique.id}>
+                <Link href={`/${rubrique.slug}`} className="font-serif text-h4 text-ink lien">
+                  {rubrique.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       )}
-    </div>
+    </>
   )
 }
 

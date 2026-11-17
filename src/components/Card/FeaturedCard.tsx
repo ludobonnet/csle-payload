@@ -1,85 +1,69 @@
 import { cn } from '@/utilities/ui'
 import Link from 'next/link'
-import React, { Fragment } from 'react'
-
-import type { Post } from '@/payload-types'
+import React from 'react'
 
 import { Media } from '@/components/Media'
+import {
+  type CardPostData,
+  ImageFallback,
+  imageOf,
+  PostDate,
+  RubriqueLabel,
+  titleLinkClass,
+} from './shared'
 
-export type FeaturedCardPostData = Pick<
-  Post,
-  'slug' | 'categories' | 'meta' | 'title' | 'heroImage'
->
-
+/**
+ * Article mis en avant : grande photo et titre côte à côte en grand écran, empilés
+ * en mobile. Le texte reste à côté de l'image, jamais posé dessus.
+ */
 export const FeaturedCard: React.FC<{
   className?: string
-  doc?: FeaturedCardPostData
+  doc?: CardPostData
   showCategories?: boolean
-}> = (props) => {
-  const { className, doc, showCategories } = props
-
-  const { slug, categories, meta, title, heroImage } = doc || {}
-  const { image: metaImage } = meta || {}
-  const displayImage = heroImage || metaImage
-
-  const hasCategories = categories && Array.isArray(categories) && categories.length > 0
-  const href = `/${slug}`
+  /** Photo à droite plutôt qu'à gauche */
+  reverse?: boolean
+  priority?: boolean
+  headingLevel?: 'h2' | 'h3'
+}> = ({ className, doc, showCategories = true, reverse, priority, headingLevel = 'h2' }) => {
+  if (!doc) return null
+  const image = imageOf(doc)
+  const Heading = headingLevel
+  const description = doc.meta?.description?.replace(/\s+/g, ' ').trim()
 
   return (
     <article
-      className={cn(
-        'group relative overflow-hidden bg-card aspect-[16/9] min-h-[400px]',
-        className,
-      )}
+      className={cn('group relative grid gap-6 lg:grid-cols-12 lg:items-end lg:gap-10', className)}
     >
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        {displayImage && typeof displayImage !== 'string' ? (
+      <div
+        className={cn(
+          'relative aspect-[3/2] overflow-hidden bg-muted lg:col-span-7',
+          reverse && 'lg:order-2',
+        )}
+      >
+        {image ? (
           <Media
-            resource={displayImage}
+            resource={image}
             fill
-            size="(max-width: 1024px) 100vw, 66vw"
-            className="h-full transition-transform duration-500 group-hover:scale-[1.02]"
+            priority={priority}
+            size="(max-width: 1024px) 100vw, 720px"
           />
         ) : (
-          <div className="w-full h-full bg-muted" />
+          <ImageFallback />
         )}
       </div>
-
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-
-      {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-10">
-        {showCategories && hasCategories && (
-          <div className="text-overline uppercase tracking-wider text-white/80 mb-3">
-            {categories?.map((category, index) => {
-              if (typeof category === 'object') {
-                const { title: categoryTitle } = category
-                const isLast = index === categories.length - 1
-
-                return (
-                  <Fragment key={index}>
-                    {categoryTitle || 'Untitled'}
-                    {!isLast && <span>, </span>}
-                  </Fragment>
-                )
-              }
-              return null
-            })}
-          </div>
+      <div className={cn('lg:col-span-5 lg:pb-2', reverse && 'lg:order-1')}>
+        {showCategories && <RubriqueLabel categories={doc.categories} />}
+        <Heading className="mt-2 font-serif text-h2 text-balance text-ink">
+          <Link href={`/${doc.slug}`} className={titleLinkClass}>
+            {doc.title}
+          </Link>
+        </Heading>
+        {description && (
+          <p className="mt-4 line-clamp-4 font-serif text-[1.125rem] leading-relaxed text-ink-soft">
+            {description}
+          </p>
         )}
-
-        {title && (
-          <h2 className="font-display text-h2 md:text-display text-white leading-tight">
-            <Link
-              href={href}
-              className="hover:underline underline-offset-4 after:absolute after:inset-0 after:content-['']"
-            >
-              {title}
-            </Link>
-          </h2>
-        )}
+        <PostDate publishedAt={doc.publishedAt} className="mt-4" />
       </div>
     </article>
   )

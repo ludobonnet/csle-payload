@@ -1,32 +1,33 @@
 import { cn } from '@/utilities/ui'
 import React from 'react'
 
-import { Card, CardPostData } from '@/components/Card'
+import { Card, type CardPostData, FeaturedCard } from '@/components/Card'
 
 export type Props = {
   posts: CardPostData[]
+  /** Met le premier article en avant (première page d'une archive) */
+  lead?: boolean
+  className?: string
 }
 
-export const CollectionArchive: React.FC<Props> = (props) => {
-  const { posts } = props
+/** Liste d'articles : un éventuel article en tête, puis une grille de trois colonnes. */
+export const CollectionArchive: React.FC<Props> = ({ posts, lead = false, className }) => {
+  const docs = (posts ?? []).filter((post) => typeof post === 'object' && post !== null)
+  const [first, ...rest] = docs
+  const grid = lead ? rest : docs
 
   return (
-    <div className={cn('container')}>
-      <div>
-        <div className="grid grid-cols-4 sm:grid-cols-8 lg:grid-cols-12 gap-y-4 gap-x-4 lg:gap-y-8 lg:gap-x-8 xl:gap-x-8">
-          {posts?.map((result, index) => {
-            if (typeof result === 'object' && result !== null) {
-              return (
-                <div className="col-span-4" key={index}>
-                  <Card className="h-full" doc={result} showCategories />
-                </div>
-              )
-            }
-
-            return null
-          })}
+    <div className={cn('container', className)}>
+      {lead && first && (
+        <FeaturedCard doc={first} priority className="mb-14 border-b border-line pb-14" />
+      )}
+      {grid.length > 0 && (
+        <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          {grid.map((post, index) => (
+            <Card key={post.slug ?? index} doc={post} />
+          ))}
         </div>
-      </div>
+      )}
     </div>
   )
 }

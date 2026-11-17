@@ -1,122 +1,59 @@
 import { cn } from '@/utilities/ui'
 import Link from 'next/link'
-import React, { Fragment } from 'react'
-
-import type { Post } from '@/payload-types'
+import React from 'react'
 
 import { Media } from '@/components/Media'
+import {
+  type CardPostData,
+  ImageFallback,
+  imageOf,
+  PostDate,
+  RubriqueLabel,
+  titleLinkClass,
+} from './shared'
 
-export type CardPostData = Pick<
-  Post,
-  'slug' | 'categories' | 'meta' | 'title' | 'heroImage' | 'publishedAt'
->
+export type { CardPostData } from './shared'
 
+/** Carte standard : photo 3:2, rubrique, titre, date. Toute la carte mène à l'article. */
 export const Card: React.FC<{
-  alignItems?: 'center'
   className?: string
   doc?: CardPostData
   showCategories?: boolean
   title?: string
-}> = (props) => {
-  const { className, doc, showCategories, title: titleFromProps } = props
-
-  const { slug, categories, meta, title, heroImage, publishedAt } = doc || {}
-  const { description, image: metaImage } = meta || {}
-  const displayImage = heroImage || metaImage
-
-  const hasCategories = categories && Array.isArray(categories) && categories.length > 0
-  const titleToUse = titleFromProps || title
-  const sanitizedDescription = description?.replace(/\s/g, ' ')
-  const href = `/${slug}`
-
-  // Format date
-  const formattedDate = publishedAt
-    ? new Date(publishedAt).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null
+  /** Attribut `sizes` de la photo */
+  size?: string
+  /** Titre plus grand, pour une carte qui ouvre une section */
+  large?: boolean
+}> = ({ className, doc, showCategories = true, title: titleFromProps, size, large }) => {
+  if (!doc) return null
+  const image = imageOf(doc)
+  const title = titleFromProps || doc.title
 
   return (
-    <article
-      className={cn(
-        'group relative overflow-hidden bg-card transition-all duration-300',
-        className,
-      )}
-    >
-      {/* Image container with 4:3 aspect ratio */}
-      <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
-        {displayImage && typeof displayImage !== 'string' ? (
+    <article className={cn('group relative flex flex-col', className)}>
+      <div className="relative aspect-[3/2] w-full overflow-hidden bg-muted">
+        {image ? (
           <Media
-            resource={displayImage}
+            resource={image}
             fill
-            size="(max-width: 768px) 100vw, 33vw"
-            className="h-full transition-transform duration-500 group-hover:scale-[1.03]"
+            size={size ?? '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px'}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-caption">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="opacity-30"
-            >
-              <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-            </svg>
-          </div>
+          <ImageFallback />
         )}
       </div>
-
-      {/* Content */}
-      <div className="py-4">
-        {showCategories && hasCategories && (
-          <div className="text-overline uppercase tracking-wider text-primary mb-2">
-            {categories?.map((category, index) => {
-              if (typeof category === 'object') {
-                const { title: categoryTitle } = category
-                const isLast = index === categories.length - 1
-
-                return (
-                  <Fragment key={index}>
-                    {categoryTitle || 'Untitled'}
-                    {!isLast && <span>, </span>}
-                  </Fragment>
-                )
-              }
-              return null
-            })}
-          </div>
-        )}
-
-        {titleToUse && (
-          <h3 className="font-display text-h4 text-foreground group-hover:text-primary transition-colors leading-snug mb-2">
-            <Link href={href} className="after:absolute after:inset-0 after:content-['']">
-              {titleToUse}
-            </Link>
-          </h3>
-        )}
-
-        {sanitizedDescription && (
-          <p className="text-body-sm text-muted-foreground line-clamp-2 mb-3">
-            {sanitizedDescription}
-          </p>
-        )}
-
-        {formattedDate && <p className="text-caption text-muted-foreground">{formattedDate}</p>}
-      </div>
+      {showCategories && <RubriqueLabel categories={doc.categories} className="mt-4" />}
+      <h3
+        className={cn('font-serif text-pretty text-ink', large ? 'mt-3 text-h3' : 'mt-1.5 text-h4')}
+      >
+        <Link href={`/${doc.slug}`} className={titleLinkClass}>
+          {title}
+        </Link>
+      </h3>
+      <PostDate publishedAt={doc.publishedAt} className="mt-2" />
     </article>
   )
 }
 
-// Re-export card variants
 export { FeaturedCard } from './FeaturedCard'
 export { MinimalCard } from './MinimalCard'

@@ -65,7 +65,7 @@ export default async function DynamicPage({ params: paramsPromise }: Args) {
 
     case 'category':
       return (
-        <div className="pt-24 pb-24">
+        <div>
           <PageClient />
           <PayloadRedirects disableNotFound url={url} />
           {draft && <LivePreviewListener />}
@@ -135,7 +135,8 @@ const resolveSlug = cache(
         payload.find({
           collection: 'posts',
           draft: false,
-          limit: 10,
+          // L'accueil n'ouvre que sur le dernier article ; les sections chargent le reste
+          limit: 1,
           pagination: false,
           overrideAccess: false,
           sort: '-publishedAt',

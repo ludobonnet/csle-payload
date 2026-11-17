@@ -1,8 +1,4 @@
-import { CollectionArchive } from '@/components/CollectionArchive'
-import { PageRange } from '@/components/PageRange'
-import { Pagination } from '@/components/Pagination'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import { ArticlesArchive } from '@/components/ArticlesArchive'
 
 import type { Category } from '@/payload-types'
 
@@ -11,49 +7,14 @@ type Props = {
   page?: number
 }
 
-export async function CategoryArchive({ category, page = 1 }: Props) {
-  const payload = await getPayload({ config: configPromise })
-
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
-    limit: 12,
-    page,
-    overrideAccess: false,
-    where: {
-      categories: {
-        contains: category.id,
-      },
-    },
-    select: {
-      title: true,
-      slug: true,
-      categories: true,
-      meta: true,
-      heroImage: true,
-      publishedAt: true,
-    },
-  })
-
+/** Rubrique : /culture, puis /culture/page/2… comme sur le WordPress d'origine. */
+export function CategoryArchive({ category, page = 1 }: Props) {
   return (
-    <>
-      <div className="container mb-16">
-        <div className="prose dark:prose-invert max-w-none">
-          <h1>{category.title}</h1>
-        </div>
-      </div>
-
-      <div className="container mb-8">
-        <PageRange currentPage={posts.page} limit={12} totalDocs={posts.totalDocs} />
-      </div>
-
-      <CollectionArchive posts={posts.docs} />
-
-      <div className="container">
-        {posts.totalPages > 1 && posts.page && (
-          <Pagination page={posts.page} totalPages={posts.totalPages} />
-        )}
-      </div>
-    </>
+    <ArticlesArchive
+      title={category.title}
+      basePath={`/${category.slug}`}
+      page={page}
+      categoryId={category.id}
+    />
   )
 }

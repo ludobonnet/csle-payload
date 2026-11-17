@@ -1,16 +1,10 @@
 import type { Metadata } from 'next/types'
 
-import { CollectionArchive } from '@/components/CollectionArchive'
-import { PageRange } from '@/components/PageRange'
-import { Pagination } from '@/components/Pagination'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
-import { notFound } from 'next/navigation'
+import { ArticlesArchive, parsePageNumber } from '@/components/ArticlesArchive'
 import { pageTitle } from '@/utilities/site'
 
-// Use dynamic rendering to avoid Neon memory issues during SSG
 export const dynamic = 'force-dynamic'
 
 type Args = {
@@ -21,45 +15,13 @@ type Args = {
 
 export default async function Page({ params: paramsPromise }: Args) {
   const { pageNumber } = await paramsPromise
-  const payload = await getPayload({ config: configPromise })
-
-  const sanitizedPageNumber = Number(pageNumber)
-
-  if (!Number.isInteger(sanitizedPageNumber)) notFound()
-
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
-    limit: 12,
-    page: sanitizedPageNumber,
-    overrideAccess: false,
-  })
+  const page = parsePageNumber(pageNumber, '/posts')
 
   return (
-    <div className="pt-24 pb-24">
+    <>
       <PageClient />
-      <div className="container mb-16">
-        <div className="prose dark:prose-invert max-w-none">
-          <h1>Posts</h1>
-        </div>
-      </div>
-
-      <div className="container mb-8">
-        <PageRange
-          currentPage={posts.page}
-          limit={12}
-          totalDocs={posts.totalDocs}
-        />
-      </div>
-
-      <CollectionArchive posts={posts.docs} />
-
-      <div className="container">
-        {posts?.page && posts?.totalPages > 1 && (
-          <Pagination page={posts.page} totalPages={posts.totalPages} />
-        )}
-      </div>
-    </div>
+      <ArticlesArchive title="Tous les articles" basePath="/posts" page={page} />
+    </>
   )
 }
 
@@ -69,5 +31,3 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
     title: pageTitle(`Tous les articles, page ${pageNumber}`),
   }
 }
-
-// No static params - using force-dynamic rendering
