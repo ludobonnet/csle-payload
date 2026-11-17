@@ -54,16 +54,18 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
 - [x] `output: 'standalone'`, suppression des reliquats Vercel, pool Postgres borné, `push: false`.
 - [x] Migration initiale `20261117_160648_initial`.
 - [x] Sitemap des articles : URLs canoniques `/{slug}` (au lieu de `/posts/{slug}` redirigé).
-- [ ] **Supprimer la route `/next/seed`** et `src/endpoints/seed` (seed du template : vide les collections).
+- [x] Route `/next/seed`, seed et accueil admin du template supprimés.
 - [x] Site public entièrement dynamique (build sans base).
-- [ ] Restes du template : logo Payload dans l'en-tête, titres « Payload Website Template », image OG par défaut, page 404 en anglais.
-- [ ] 404 des URLs à plusieurs segments (`/a/b`) : 404 brute de Next, sans layout (deux layouts racines). Ajouter un catch-all `[slug]/[...rest]` qui appelle `notFound()`.
-- [ ] Pages `cgu` et `partenaires` : reprise dans la collection `pages`.
-- [ ] Redirections pour les 2 articles vides (vers leur catégorie).
+- [x] Identité CSLE : logo typographique, titres « Titre - CSLE », méta OG (og:url corrigé), 404 en français.
+- [x] 404 des URLs à plusieurs segments (`/a/b`) via `[slug]/[...rest]`.
+- [ ] **Mentions légales** à réécrire (la page `cgu` de WordPress est celle de casentlete.fr : éditeur, hébergeur OVH, plateforme sport). `partenaires` (2 liens d'échange de 2012) : abandonnée sauf avis contraire.
+- [x] Redirections des 2 articles vides vers `/humour` (`redirects.js`).
 - [ ] SEO : catégories dans le sitemap, méta, contrôle des URLs `/{slug}` contre la liste WordPress.
-- [ ] Images : `quality={100}` et `sizes` jusqu'à 3 840 px dans `ImageMedia` → poids excessif.
+- [x] Images : qualité 75, `sizes` réels, recadrage `object-cover` en mode fill (images déformées auparavant).
+- [x] Vidéos : bloc `embed` branché dans le rendu RichText (les 198 vidéos étaient invisibles).
 - [ ] (Option) `@payloadcms/email-resend` depuis `csle@send.bonnet.pro` pour la réinitialisation de mot de passe.
-- [ ] Nettoyage : `docker-compose.yml` (Mongo), `Dockerfile`, `CLAUDE.md` (ImageKit/Vercel), `README.md` du template.
+- [x] Nettoyage : `docker-compose.yml`, `Dockerfile` supprimés ; `README.md` et `CLAUDE.md` à jour.
+- [x] Tests : convertisseurs inclus dans `pnpm test:int` (29), e2e des parcours publics (6).
 - [ ] Workflow GitHub Actions `deploy.yml` (voir contraintes ci-dessous).
 
 ### Contraintes de build constatées
@@ -77,6 +79,7 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
   supprimer `.next/standalone/.env*` avant rsync (garde-fou).
 - `public/` et `.next/static` sont à copier dans l'artefact, **sauf `public/media`** (905 Mo, servi par R2).
 - Artefact ≈ 100 Mo hors médias.
+- `next/font` télécharge Playfair et Inter depuis Google au build : un échec réseau ponctuel fait échouer le build (vu une fois). Relancer, ou auto-héberger les polices (`next/font/local`).
 
 ## Lot 2 — Infra (sur le VPS)
 

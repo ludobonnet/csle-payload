@@ -2,22 +2,24 @@
 
 ## Contexte projet
 
-Migration du blog magazine csle.fr depuis une stack Next.js 12 + WordPress headless vers **Next.js 15 + Payload CMS 3**.
-
-Blog a 4 mains cree en 2008, ~547 articles. Objectif : relancer le site avec une stack moderne.
+Blog magazine csle.fr (voyage, tourisme, culture, lifestyle), à quatre mains depuis 2008 : 545 articles publiés.
+Migré de Next.js 12 + WordPress headless vers **Next.js 15 + Payload CMS 3**, pour être hébergé sans PHP
+sur le VPS LSAN. Plan et état d'avancement : `docs/deploiement-vps.md`.
 
 ## Stack technique
 
 - **Framework** : Next.js 15 (App Router) + React 19
 - **CMS** : Payload CMS 3.73
-- **Base de donnees** : PostgreSQL (Neon)
-- **Medias** : ImageKit
-- **Hebergement** : Vercel
+- **Base de données** : PostgreSQL 17 — dev : conteneur `csle-pg-dev` (`127.0.0.1:55433`), qui porte le contenu de référence ; prod : base `csle` sur le Postgres partagé du VPS LSAN. Neon est figé, ne plus l'utiliser.
+- **Schéma** : migrations uniquement (`src/migrations`, `push: false`)
+- **Médias** : Cloudflare R2 (`images.csle.fr`) via `@payloadcms/storage-s3` ; disque `public/media` en dev
+- **Hébergement** : VPS LSAN, Node 24 + systemd + Cloudflare Tunnel, build `standalone`, sans Docker
+- **Rendu** : site public entièrement dynamique (`force-dynamic` dans le layout) — le build ne touche pas la base
 - **Langage** : TypeScript strict, ESM (`"type": "module"`)
 - **Package manager** : pnpm
 - **Styling** : Tailwind CSS 4 (personnalisation poussee, pas de template generique)
 - **Rich text** : Lexical (`@payloadcms/richtext-lexical`)
-- **UI** : Radix UI, Lucide React, police Geist
+- **UI** : Radix UI, Lucide React ; polices Playfair Display (titres) + Inter (texte) via next/font
 - **Tests** : Vitest (integration) + Playwright (e2e)
 
 ### Plugins Payload actifs
@@ -31,8 +33,8 @@ Blog a 4 mains cree en 2008, ~547 articles. Objectif : relancer le site avec une
 | Slug         | Description                                      |
 | ------------ | ------------------------------------------------ |
 | `pages`      | Pages du site (SEO, hero, layout blocks)         |
-| `posts`      | Articles de blog (~547 migres depuis WordPress)  |
-| `media`      | Assets geres via ImageKit                        |
+| `posts`      | Articles (545 publiés, 30 brouillons)            |
+| `media`      | Images (R2 en prod, disque en dev)               |
 | `categories` | Taxonomie des articles (~10 categories actives)  |
 | `users`      | Authentification (3 auteurs : admin, Ludo, Sandrine) |
 
@@ -218,10 +220,8 @@ Le fichier `AGENTS.md` a la racine contient une reference exhaustive avec exempl
 
 ## Phases du projet
 
-1. Setup projet Payload + Neon
-2. Configuration Collections Payload
-3. Integration ImageKit
-4. Scripts migration WordPress vers Payload
-5. Frontend (pages article, categorie, home)
-6. SEO (sitemap, meta, redirections)
-7. Deploiement Vercel
+1. ✅ Setup Payload, collections, migration WordPress (images, vidéos, galeries, shortcodes)
+2. ✅ Frontend magazine, identité CSLE, 404, redirections
+3. 🟡 Préparation du déploiement (R2, standalone, migrations) — voir `docs/deploiement-vps.md`
+4. ⬜ Infra VPS (base, systemd, tunnel, R2, sauvegardes)
+5. ⬜ Bascule DNS
