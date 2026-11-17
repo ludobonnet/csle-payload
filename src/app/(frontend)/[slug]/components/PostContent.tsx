@@ -6,7 +6,7 @@ import { TagList } from '@/components/TagList'
 import { PostNavigation } from '@/components/PostNavigation'
 import { ShareButtons } from '@/components/ShareButtons'
 
-import type { Post, User } from '@/payload-types'
+import type { Post } from '@/payload-types'
 
 type Props = {
   post: Post

@@ -1,5 +1,8 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import redirects from './redirects.js'
 
 const NEXT_PUBLIC_SERVER_URL =
@@ -12,6 +15,8 @@ const MEDIA_PUBLIC_BASE_URL = process.env.MEDIA_PUBLIC_BASE_URL
 const nextConfig = {
   // Build autonome : déployé tel quel sur le VPS (systemd + node server.js)
   output: 'standalone',
+  // Racine explicite : un lockfile parasite plus haut (~/package-lock.json) fausserait le traçage
+  outputFileTracingRoot: path.dirname(fileURLToPath(import.meta.url)),
   images: {
     remotePatterns: [NEXT_PUBLIC_SERVER_URL, MEDIA_PUBLIC_BASE_URL].filter(Boolean).map((item) => {
       const url = new URL(item)

@@ -15,11 +15,9 @@ type ShareButtonsProps = {
 export function ShareButtons({ title, slug, description, className }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false)
 
-  // Build the full URL (assumes csle.fr domain)
-  const url = `https://csle.fr/${slug}`
+  const url = `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://csle.fr'}/${slug}`
   const encodedUrl = encodeURIComponent(url)
   const encodedTitle = encodeURIComponent(title)
-  const encodedDescription = description ? encodeURIComponent(description) : ''
 
   // Share URLs for each platform
   const shareUrls = {
