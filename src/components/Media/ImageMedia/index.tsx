@@ -48,7 +48,8 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
   if (!src) return null
 
   return (
-    <picture className={cn(pictureClassName)}>
+    // En mode fill, l'image se cale sur <picture> : il doit couvrir le conteneur et être positionné
+    <picture className={cn(fill && 'absolute inset-0 block', pictureClassName)}>
       <NextImage
         alt={alt || ''}
         // En mode fill, recadrer plutôt que déformer (sauf choix explicite)

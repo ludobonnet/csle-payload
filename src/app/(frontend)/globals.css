@@ -212,9 +212,19 @@
   }
 }
 
-/* Évite le flash de thème avant que le script InitTheme ne pose data-theme */
+/*
+ * Évite le flash de thème avant que le script InitTheme ne pose data-theme. Filet de sécurité :
+ * sans JavaScript (ou si le script échoue), la page apparaît quand même au bout de 0,4 s.
+ */
 html {
   opacity: 0;
+  animation: reveler-page 0s linear 0.4s forwards;
+}
+
+@keyframes reveler-page {
+  to {
+    opacity: 1;
+  }
 }
 
 html[data-theme='dark'],

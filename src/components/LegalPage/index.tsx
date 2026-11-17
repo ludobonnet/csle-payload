@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 
-/** Gabarit des pages légales : colonne de lecture, typographie du site. */
+/**
+ * Gabarit des pages de service (mentions légales, confidentialité, contact) : titre sous
+ * le filet, colonne de lecture du site, intertitres en grotesque pour se distinguer des articles.
+ */
 export function LegalPage({
   title,
   updatedAt,
@@ -11,13 +14,13 @@ export function LegalPage({
   children: ReactNode
 }) {
   return (
-    <article className="container py-16 md:py-24">
-      <div className="mx-auto max-w-[48rem]">
-        <h1 className="font-display text-h1">{title}</h1>
-        {updatedAt && (
-          <p className="mt-3 text-caption text-muted-foreground">Mise à jour : {updatedAt}</p>
-        )}
-        <div className="prose md:prose-md dark:prose-invert mt-10 max-w-none">{children}</div>
+    <article className="container pb-8 pt-12 md:pt-20">
+      <div className="mx-auto max-w-measure">
+        <h1 className="filet font-serif text-h1 text-ink">{title}</h1>
+        {updatedAt && <p className="meta mt-4">Mise à jour le {updatedAt}.</p>}
+        <div className="prose mt-10 prose-h2:font-sans prose-h2:font-condensed prose-h2:text-[1.0625rem] prose-h2:font-semibold prose-h2:tracking-normal">
+          {children}
+        </div>
       </div>
     </article>
   )

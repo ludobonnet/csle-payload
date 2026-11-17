@@ -1,12 +1,15 @@
-import Script from 'next/script'
 import React from 'react'
 
 import { defaultTheme, themeLocalStorageKey } from '../ThemeSelector/types'
 
+/**
+ * Pose data-theme sur <html> avant le premier rendu (pas de flash de thème). Script en ligne
+ * ordinaire, rendu par le serveur dans <head> : exécuté à la lecture du HTML, y compris sur
+ * la 404, où un next/script « beforeInteractive » ne s'exécutait pas (page restée blanche).
+ */
 export const InitTheme: React.FC = () => {
   return (
-    // eslint-disable-next-line @next/next/no-before-interactive-script-outside-document
-    <Script
+    <script
       dangerouslySetInnerHTML={{
         __html: `
   (function () {
@@ -44,7 +47,6 @@ export const InitTheme: React.FC = () => {
   `,
       }}
       id="theme-script"
-      strategy="beforeInteractive"
     />
   )
 }

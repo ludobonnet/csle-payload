@@ -5,11 +5,41 @@ import { expect, test } from '@playwright/test'
  * Lancer : pnpm test:e2e (démarre `pnpm dev` si besoin).
  */
 test.describe('Site public', () => {
-  test('accueil : titre du site, logo, derniers articles', async ({ page }) => {
+  test('accueil : titre du site, logo, à la une, sections par rubrique', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveTitle('CSLE - Magazine voyage tourisme culture et lifestyle')
-    await expect(page.locator('header').getByText('CSLE', { exact: true })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Articles récents' })).toBeVisible()
+    await expect(page.locator('header').getByRole('link', { name: /retour à l'accueil/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'À la une' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Culture', level: 2 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Toutes les rubriques' })).toBeVisible()
+  })
+
+  test('rubrique paginée à la manière de WordPress', async ({ page, request }) => {
+    const response = await page.goto('/culture/page/2')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('Culture, page 2 - CSLE')
+    await expect(page.locator('nav[aria-label="Pages"] [aria-current="page"]')).toHaveText('2')
+
+    const first = await request.get('/culture/page/1', { maxRedirects: 0 })
+    expect(first.status()).toBe(308)
+    expect(first.headers().location).toBe('/culture')
+
+    expect((await request.get('/culture/page/9999')).status()).toBe(404)
+  })
+
+  test('recherche : la requête de l’URL est conservée', async ({ page }) => {
+    await page.goto('/search?q=jeep')
+    await expect(page.getByRole('searchbox')).toHaveValue('jeep')
+    await page.waitForTimeout(800)
+    expect(new URL(page.url()).searchParams.get('q')).toBe('jeep')
+    await expect(page.locator('main article').first()).toBeVisible()
+  })
+
+  test('menu mobile : sommaire des rubriques', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Menu' }).click()
+    await expect(page.locator('#menu-mobile').getByRole('link', { name: /^Culture/ })).toBeVisible()
   })
 
   test('article : images du corps et vidéo intégrée', async ({ page }) => {

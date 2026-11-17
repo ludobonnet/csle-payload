@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useCallback, use, useState } from 'react'
+import React, { createContext, useCallback, useEffect, use, useState } from 'react'
 
 import type { Theme, ThemeContextType } from './types'
 
@@ -32,8 +32,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [])
 
-  // Pas d'effet de synchronisation au montage : InitTheme pose data-theme avant le premier rendu
-  // (préférence enregistrée ou préférence système), et l'état initial le relit.
+  // InitTheme pose data-theme avant le premier rendu et l'état initial le relit. Mais quand
+  // React re-rend la racine côté client (page 404), l'attribut disparaît et la page restait
+  // à opacité 0 : on le repose au montage s'il manque (écriture DOM seule, pas d'état).
+  useEffect(() => {
+    const root = document.documentElement
+    if (root.getAttribute('data-theme')) return
+    const stored = window.localStorage.getItem(themeLocalStorageKey)
+    const restored =
+      stored === 'light' || stored === 'dark' ? stored : getImplicitPreference() || 'light'
+    root.setAttribute('data-theme', restored)
+  }, [])
 
   return <ThemeContext value={{ setTheme, theme }}>{children}</ThemeContext>
 }
