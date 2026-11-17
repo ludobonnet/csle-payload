@@ -90,13 +90,22 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
 
 ## Lot 2 — Infra (sur le VPS)
 
-- [ ] Zone `csle.fr` dans le compte Cloudflare (**prérequis**, à la charge de Ludo).
-- [ ] Users `csle-front` (nologin) et `csle-deploy` ; `/srv/csle/front/{releases,cache}` avec les droits du runbook §2.2
-      (`releases` : csle-deploy:csle-front 750 ; `cache` : csle-front 750). `ops/csle-deploy.sh` → `/srv/csle/deploy.sh` (csle-deploy, 750).
-- [ ] Sudoers `/etc/sudoers.d/csle-deploy` : `csle-deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart csle-front` (valider avec `visudo -cf`).
-- [ ] Clé SSH dédiée `csle-deploy` ; environnement GitHub `prod` : secrets `SSH_KEY`, `SSH_KNOWN_HOSTS`, `SSH_HOST`, `DATABASE_URL_OWNER` (via le tunnel, `127.0.0.1:55432`), variables `SITE_URL`, `MEDIA_PUBLIC_BASE_URL`.
-- [ ] Postgres : mots de passe générés sur le serveur (`/etc/csle/pg-credentials.env`, 600 root), puis `ops/postgres-setup.sql` **avant** toute restauration ; matrice CONNECT diagonale revérifiée sur `lsan`, `lsan_pp`, `umami`, `csle` (runbook §3.4).
-- [ ] `/etc/csle/front.env` (d'après `ops/front.env.example`, 640 root:csle-front) ; unit `ops/csle-front.service` → `/etc/systemd/system/`.
+- [~] Zone `csle.fr` créée sur Cloudflare (2026-11-17), **`pending`** : NS à basculer chez OVH vers
+      `fred.ns.cloudflare.com` / `rita.ns.cloudflare.com` **après** contrôle des enregistrements importés
+      (MX `mx3`/`mx4.mail.ovh.net`, `autodiscover`, `mail`, `ftp`, TXT `google-site-verification`).
+      L'apex pointe encore sur Vercel (402).
+- [x] Serveur installé le 2026-11-17 par `ops/vps-setup.sh` (idempotent) : users `csle-front` (nologin) et
+      `csle-deploy` ; `/srv/csle/front` et `releases` en csle-deploy:csle-front 750, `cache` en csle-front 750,
+      `/srv/csle/deploy.sh` ; sudoers `/etc/sudoers.d/csle-deploy` limité à `systemctl restart csle-front`.
+- [x] Clé SSH CI dédiée (`restrict,port-forwarding,permitopen="127.0.0.1:5432"`) : shell, écriture et tunnel
+      vérifiés, `sudo` refusé sur les services LSAN. Clé privée uniquement dans le secret GitHub.
+- [x] Environnement GitHub `prod` : secrets `SSH_KEY`, `SSH_KNOWN_HOSTS`, `SSH_HOST`, `DATABASE_URL_OWNER`
+      (`127.0.0.1:55432`), variables `SITE_URL`, `MEDIA_PUBLIC_BASE_URL`.
+- [x] Postgres : mots de passe générés sur le serveur (`/etc/csle/pg-credentials.env`, 600 root), rôles
+      `csle_owner` / `csle_app` et base `csle` ; matrice CONNECT diagonale vérifiée sur `lsan`, `lsan_pp`,
+      `umami`, `csle` ; `csle_app` : connexion à `lsan` refusée, DDL refusé.
+- [x] `/etc/csle/front.env` (640 root:csle-front, secrets générés, R2 à compléter) ; unit `csle-front` activée,
+      pas encore démarrée (aucune release).
 - [ ] Bucket R2 `csle-media` + domaine `images.csle.fr` + jeton dédié ; copie de `public/media` (905 Mo, 9 613 fichiers) avec `rclone`, noms conservés, à la racine du bucket.
 - [ ] Tunnel : hostnames `csle.fr`, `www.csle.fr` → `http://localhost:3020` ; redirection apex/www ; Access sur `csle.fr/admin*` (Ludo, Sandrine).
 - [ ] Sauvegarde quotidienne de `csle` + test de restauration.
