@@ -36,7 +36,10 @@ export async function closeConnection(): Promise<void> {
 /**
  * Execute a SQL query and return results
  */
-export async function query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]> {
+export async function query<T = unknown>(
+  sql: string,
+  params?: mysql.ExecuteValues[],
+): Promise<T[]> {
   const conn = await getConnection()
   try {
     const [rows] = await conn.execute(sql, params)

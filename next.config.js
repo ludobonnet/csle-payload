@@ -17,7 +17,13 @@ const nextConfig = {
   output: 'standalone',
   // Racine explicite : un lockfile parasite plus haut (~/package-lock.json) fausserait le traçage
   outputFileTracingRoot: path.dirname(fileURLToPath(import.meta.url)),
+  turbopack: {
+    root: path.dirname(fileURLToPath(import.meta.url)),
+  },
   images: {
+    // Next 16 refuse d'optimiser une image résolue vers une IP locale. En dev, les médias sont servis
+    // par Payload sur localhost ; en prod ils viennent d'images.csle.fr (public) : protection active.
+    dangerouslyAllowLocalIP: process.env.NODE_ENV !== 'production',
     remotePatterns: [NEXT_PUBLIC_SERVER_URL, MEDIA_PUBLIC_BASE_URL].filter(Boolean).map((item) => {
       const url = new URL(item)
 
