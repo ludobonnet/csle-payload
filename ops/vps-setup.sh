@@ -17,9 +17,10 @@ install -d -m750 -o csle-deploy -g csle-front /srv/csle/front/releases
 install -d -m750 -o csle-front -g csle-front /srv/csle/front/cache
 install -m750 -o csle-deploy -g csle-deploy csle-deploy.sh /srv/csle/deploy.sh
 # Sudoers
-echo 'csle-deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart csle-front' > sudoers.tmp
-visudo -cf sudoers.tmp
-install -m440 -o root -g root sudoers.tmp /etc/sudoers.d/csle-deploy
+sudoers_tmp=$(mktemp); trap 'rm -f "$sudoers_tmp"' EXIT
+echo 'csle-deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart csle-front' > "$sudoers_tmp"
+visudo -cf "$sudoers_tmp"
+install -m440 -o root -g root "$sudoers_tmp" /etc/sudoers.d/csle-deploy
 # Postgres
 install -d -m750 -o root -g csle-front /etc/csle
 if [ ! -f /etc/csle/pg-credentials.env ]; then
@@ -33,11 +34,12 @@ if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='csle_owne
 fi
 # Environnement du service
 if [ ! -f /etc/csle/front.env ]; then
-  sed -e "s|csle_app:__MOT_DE_PASSE__|csle_app:${CSLE_APP_PWD}|" \
+  # Écrit directement à sa place sous umask 077 : jamais de copie lisible des secrets
+  ( umask 077; sed -e "s|csle_app:__MOT_DE_PASSE__|csle_app:${CSLE_APP_PWD}|" \
       -e "s|^PAYLOAD_SECRET=.*|PAYLOAD_SECRET=$(openssl rand -hex 32)|" \
       -e "s|^CRON_SECRET=.*|CRON_SECRET=$(openssl rand -hex 32)|" \
-      -e "s|^PREVIEW_SECRET=.*|PREVIEW_SECRET=$(openssl rand -hex 32)|" front.env.example > front.env.tmp
-  install -m640 -o root -g csle-front front.env.tmp /etc/csle/front.env; rm -f front.env.tmp
+      -e "s|^PREVIEW_SECRET=.*|PREVIEW_SECRET=$(openssl rand -hex 32)|" front.env.example > /etc/csle/front.env )
+  chown root:csle-front /etc/csle/front.env; chmod 640 /etc/csle/front.env
 fi
 # Unit systemd (activée, pas démarrée : aucune release encore)
 install -m644 -o root -g root csle-front.service /etc/systemd/system/csle-front.service
