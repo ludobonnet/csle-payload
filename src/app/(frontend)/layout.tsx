@@ -30,6 +30,11 @@ import { draftMode } from 'next/headers'
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 
+// Tout le site public est rendu à la requête (trafic faible, Cloudflare devant) :
+// le build ne touche jamais la base, et aucune page n'est figée sans ses données
+// (sans cette ligne, la 404 était prérendue sans en-tête quand la base manquait).
+export const dynamic = 'force-dynamic'
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled } = await draftMode()
 
