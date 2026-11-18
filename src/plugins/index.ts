@@ -13,6 +13,7 @@ import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
 import { mediaStorage } from './mediaStorage'
+import { csleMcp } from '@/mcp'
 import { pageTitle } from '@/utilities/site'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
@@ -92,4 +93,5 @@ export const plugins: Plugin[] = [
     },
   }),
   mediaStorage,
+  csleMcp,
 ]

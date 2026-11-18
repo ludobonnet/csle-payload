@@ -33,6 +33,7 @@
     "@payloadcms/live-preview-react": "3.94.0",
     "@payloadcms/next": "3.94.0",
     "@payloadcms/plugin-form-builder": "3.94.0",
+    "@payloadcms/plugin-mcp": "3.94.0",
     "@payloadcms/plugin-nested-docs": "3.94.0",
     "@payloadcms/plugin-redirects": "3.94.0",
     "@payloadcms/plugin-search": "3.94.0",
@@ -61,7 +62,8 @@
     "react-dom": "19.3.1",
     "react-hook-form": "7.45.4",
     "sharp": "0.35.5",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",

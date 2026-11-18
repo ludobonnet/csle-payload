@@ -1,7 +1,8 @@
-import * as migration_20261117_160648_initial from './20261117_160648_initial'
-import * as migration_20261117_224346_payload_3_94 from './20261117_224346_payload_3_94'
-import * as migration_20261118_090000_bio_sandrine from './20261118_090000_bio_sandrine'
-import * as migration_20261118_100000_intertitres from './20261118_100000_intertitres'
+import * as migration_20261117_160648_initial from './20261117_160648_initial';
+import * as migration_20261117_224346_payload_3_94 from './20261117_224346_payload_3_94';
+import * as migration_20261118_090000_bio_sandrine from './20261118_090000_bio_sandrine';
+import * as migration_20261118_100000_intertitres from './20261118_100000_intertitres';
+import * as migration_20261118_154652_mcp_api_keys from './20261118_154652_mcp_api_keys';
 
 export const migrations = [
   {
@@ -24,4 +25,9 @@ export const migrations = [
     down: migration_20261118_100000_intertitres.down,
     name: '20261118_100000_intertitres',
   },
-]
+  {
+    up: migration_20261118_154652_mcp_api_keys.up,
+    down: migration_20261118_154652_mcp_api_keys.down,
+    name: '20261118_154652_mcp_api_keys'
+  },
+];

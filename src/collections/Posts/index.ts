@@ -1,11 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
 import {
+  BlockquoteFeature,
   BlocksFeature,
   FixedToolbarFeature,
   HeadingFeature,
   HorizontalRuleFeature,
   InlineToolbarFeature,
+  OrderedListFeature,
+  UnorderedListFeature,
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 
@@ -94,6 +97,11 @@ export const Posts: CollectionConfig<'posts'> = {
                     FixedToolbarFeature(),
                     InlineToolbarFeature(),
                     HorizontalRuleFeature(),
+                    // Citations et listes : utiles aux critiques, et conservées par la
+                    // conversion Markdown → Lexical du MCP (src/mcp/markdown.ts)
+                    BlockquoteFeature(),
+                    UnorderedListFeature(),
+                    OrderedListFeature(),
                   ]
                 },
               }),
