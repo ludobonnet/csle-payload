@@ -1,0 +1,7 @@
+# /etc/cron.d/csle-jobs — 644 root:root
+# File de tâches Payload, toutes les minutes : publications programmées (`schedulePublish`).
+# Passe par l'API (et non `jobs.autoRun`) : la tâche tourne ainsi dans une requête Next,
+# seul contexte où `revalidatePath` fonctionne après publication.
+# Le secret est lu dans front.env au moment de l'appel : jamais écrit ici.
+SHELL=/bin/sh
+* * * * * csle-front curl -fsS -m 50 -o /dev/null -H "Authorization: Bearer $(sed -n 's/^CRON_SECRET=//p' /etc/csle/front.env)" "http://127.0.0.1:3020/api/payload-jobs/run?queue=default"

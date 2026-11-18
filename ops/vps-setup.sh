@@ -49,4 +49,6 @@ fi
 install -m644 -o root -g root csle-front.service /etc/systemd/system/csle-front.service
 systemctl daemon-reload
 systemctl enable csle-front >/dev/null 2>&1
+# Cron de la file de tâches Payload (publications programmées)
+install -m644 -o root -g root csle-jobs.cron /etc/cron.d/csle-jobs
 echo OK
