@@ -1,0 +1,123 @@
+/*
+ * Thème de l'interface d'administration Payload, aux couleurs de la refonte 2026
+ * (voir src/app/(frontend)/globals.css) : papier, encre brune, sauge, Archivo.
+ *
+ * Payload range ses styles dans @layer payload-default : les règles ci-dessous,
+ * hors couche, l'emportent sans !important. Conséquence : une variable posée sur
+ * :root s'applique aussi au mode sombre, d'où les sélecteurs [data-theme] explicites.
+ */
+
+@font-face {
+  font-family: 'Archivo';
+  src: url('../../../node_modules/@fontsource-variable/archivo/files/archivo-latin-standard-normal.woff2')
+    format('woff2');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-body: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Rayons quasi nuls, comme sur le site */
+  --style-radius-s: 2px;
+  --style-radius-m: 3px;
+  --style-radius-l: 4px;
+
+  /* Gris chauds : du papier (#fbfbf8) au brun-noir */
+  --color-base-0: rgb(251, 251, 248);
+  --color-base-50: rgb(239, 239, 236);
+  --color-base-100: rgb(228, 227, 224);
+  --color-base-150: rgb(216, 215, 212);
+  --color-base-200: rgb(204, 203, 201);
+  --color-base-250: rgb(192, 192, 189);
+  --color-base-300: rgb(180, 180, 177);
+  --color-base-350: rgb(169, 168, 165);
+  --color-base-400: rgb(157, 156, 153);
+  --color-base-450: rgb(145, 144, 141);
+  --color-base-500: rgb(134, 132, 130);
+  --color-base-550: rgb(122, 120, 118);
+  --color-base-600: rgb(110, 108, 106);
+  --color-base-650: rgb(98, 96, 94);
+  --color-base-700: rgb(86, 84, 82);
+  --color-base-750: rgb(75, 72, 70);
+  --color-base-800: rgb(63, 61, 58);
+  --color-base-850: rgb(51, 49, 47);
+  --color-base-900: rgb(40, 37, 35);
+  --color-base-950: rgb(28, 25, 23);
+  --color-base-1000: rgb(16, 13, 11);
+
+  /* Sauge (couleur « succès » de Payload) : 500 = #749f55 (logo), 700 = #4b7135 (encre sauge) */
+  --color-success-50: rgb(238, 242, 232);
+  --color-success-100: rgb(224, 233, 215);
+  --color-success-150: rgb(210, 223, 199);
+  --color-success-200: rgb(197, 214, 183);
+  --color-success-250: rgb(184, 205, 166);
+  --color-success-300: rgb(170, 196, 150);
+  --color-success-350: rgb(156, 187, 134);
+  --color-success-400: rgb(143, 177, 118);
+  --color-success-450: rgb(130, 168, 101);
+  --color-success-500: rgb(116, 159, 85);
+  --color-success-550: rgb(106, 148, 77);
+  --color-success-600: rgb(96, 136, 69);
+  --color-success-650: rgb(85, 124, 61);
+  --color-success-700: rgb(75, 113, 53);
+  --color-success-750: rgb(64, 97, 46);
+  --color-success-800: rgb(54, 81, 38);
+  --color-success-850: rgb(43, 65, 31);
+  --color-success-900: rgb(33, 49, 23);
+  --color-success-950: rgb(22, 33, 16);
+}
+
+html[data-theme='light'] {
+  --theme-text: #2a2420; /* encre brune du site */
+}
+
+/* ---------- Taille du texte : base 16px au lieu de 13px ---------- */
+
+/* Presque toute l'interface est en rem : changer html suffit à tout agrandir. */
+html {
+  font-size: 16px;
+}
+
+/* Les quelques textes que Payload fixe en px, remis à l'échelle (≈ ×16/13). */
+label.field-label:not(.unstyled),
+.localized,
+.collapsible__toggle,
+.react-select .rs__option,
+.card__title {
+  font-size: 16px;
+}
+
+.multi-value-label,
+.relationship--multi-value-label__content,
+.pill--rounded {
+  font-size: 14px;
+}
+
+.error-pill,
+.date-time-picker .react-datepicker__day,
+.date-time-picker .react-datepicker__month-text {
+  font-size: 13px;
+}
+
+/* ---------- Boutons principaux en sauge ---------- */
+
+html[data-theme='light'] .btn--style-primary:not(.btn--disabled) {
+  --color: var(--color-base-0);
+  --bg-color: var(--color-success-700);
+  --hover-bg: var(--color-success-800);
+}
+
+html[data-theme='dark'] .btn--style-primary:not(.btn--disabled) {
+  --color: var(--color-base-900);
+  --bg-color: var(--color-success-300);
+  --hover-bg: var(--color-success-200);
+}
+
+/* Sélection de texte en anis, comme sur le site */
+::selection {
+  background: #ced346;
+  color: #2a2420;
+}
