@@ -8,7 +8,9 @@ test.describe('Site public', () => {
   test('accueil : titre du site, logo, à la une, sections par rubrique', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveTitle('CSLE - Magazine voyage tourisme culture et lifestyle')
-    await expect(page.locator('header').getByRole('link', { name: /retour à l'accueil/ })).toBeVisible()
+    await expect(
+      page.locator('header').getByRole('link', { name: /retour à l'accueil/ }),
+    ).toBeVisible()
     await expect(page.getByRole('heading', { name: 'À la une' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Culture', level: 2 })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Toutes les rubriques' })).toBeVisible()
@@ -35,6 +37,27 @@ test.describe('Site public', () => {
     await expect(page.locator('main article').first()).toBeVisible()
   })
 
+  test('recherche plein texte, sans tenir compte des accents', async ({ page }) => {
+    // « gael » trouve « Gaël Faye », présent dans le texte et le titre
+    await page.goto('/search?q=gael%20faye')
+    await expect(page.getByRole('link', { name: /Châteaurenard/ })).toBeVisible()
+    // « lisbonne » n'apparaît que dans le texte d'un article, pas dans son titre
+    await page.goto('/search?q=lisbonne')
+    await expect(page.locator('main article').first()).toBeVisible()
+  })
+
+  test('mots-clés : pages /tag/… navigables mais hors index', async ({ page, request }) => {
+    const response = await page.goto('/tag/musique')
+    expect(response?.status()).toBe(200)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
+    expect((await request.get('/tag/mot-cle-inexistant')).status()).toBe(404)
+  })
+
+  test('bio de l’autrice en fin d’article', async ({ page }) => {
+    await page.goto('/faire-un-safari-en-afrique-du-sud')
+    await expect(page.getByRole('complementary', { name: 'À propos de Sandrine' })).toBeVisible()
+  })
+
   test('menu mobile : sommaire des rubriques', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/')
@@ -49,7 +72,13 @@ test.describe('Site public', () => {
     expect(await page.locator('article img, main img').count()).toBeGreaterThan(1)
 
     await page.goto('/une-cartouche-sur-la-scene')
-    await expect(page.locator('iframe[src*="youtube-nocookie.com/embed"], iframe[src*="dailymotion"], iframe[src*="vimeo"]').first()).toBeAttached()
+    await expect(
+      page
+        .locator(
+          'iframe[src*="youtube-nocookie.com/embed"], iframe[src*="dailymotion"], iframe[src*="vimeo"]',
+        )
+        .first(),
+    ).toBeAttached()
   })
 
   test('catégorie servie à la racine', async ({ page }) => {

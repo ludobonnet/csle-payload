@@ -12,24 +12,31 @@ export const ARCHIVE_PAGE_SIZE = 13
 
 /**
  * Archive paginée d'articles publiés, du plus récent au plus ancien : une rubrique
- * (`categoryId`) ou tout le magazine. Une page au-delà de la dernière renvoie une 404.
+ * (`categoryId`), un mot-clé (`tagId`) ou tout le magazine. Une page au-delà de la
+ * dernière renvoie une 404, comme une archive vide (mot-clé sans article publié).
  */
 export async function ArticlesArchive({
   title,
   basePath,
   page = 1,
   categoryId,
+  tagId,
+  contextPrefix,
 }: {
   title: string
   basePath: string
   page?: number
   categoryId?: number
+  tagId?: number
+  /** Placé avant le décompte : « Mot-clé. » */
+  contextPrefix?: string
 }) {
   const payload = await getPayload({ config: configPromise })
 
-  const where: Where = categoryId
-    ? { and: [{ _status: { equals: 'published' } }, { categories: { contains: categoryId } }] }
-    : { _status: { equals: 'published' } }
+  const filters: Where[] = [{ _status: { equals: 'published' } }]
+  if (categoryId) filters.push({ categories: { contains: categoryId } })
+  if (tagId) filters.push({ tags: { contains: tagId } })
+  const where: Where = { and: filters }
 
   const posts = await payload.find({
     collection: 'posts',
@@ -49,13 +56,18 @@ export async function ArticlesArchive({
     },
   })
 
-  if (page > 1 && page > posts.totalPages) notFound()
+  if ((page > 1 && page > posts.totalPages) || (tagId && posts.totalDocs === 0)) notFound()
 
   return (
     <>
       <ArchiveHeader
         title={title}
-        context={archiveContext({ page, limit: ARCHIVE_PAGE_SIZE, totalDocs: posts.totalDocs })}
+        context={[
+          contextPrefix,
+          archiveContext({ page, limit: ARCHIVE_PAGE_SIZE, totalDocs: posts.totalDocs }),
+        ]
+          .filter(Boolean)
+          .join(' ')}
       />
       <CollectionArchive posts={posts.docs} lead />
       <div className="container">

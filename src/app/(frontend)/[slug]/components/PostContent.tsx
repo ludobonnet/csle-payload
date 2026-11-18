@@ -5,6 +5,7 @@ import { AuthorBio } from '@/components/AuthorBio'
 import { TagList } from '@/components/TagList'
 import { PostNavigation } from '@/components/PostNavigation'
 import { ShareButtons } from '@/components/ShareButtons'
+import { getAuthorProfile } from '@/utilities/getAuthorProfile'
 
 import type { Post } from '@/payload-types'
 
@@ -13,8 +14,10 @@ type Props = {
 }
 
 /** Article : en-tête, colonne de lecture, puis une fin d'article sobre (partage, auteur, suite). */
-export function PostContent({ post }: Props) {
-  const firstAuthor = post.populatedAuthors?.[0]
+export async function PostContent({ post }: Props) {
+  // Bio de l'auteur : populatedAuthors ne porte que l'id et le nom
+  const firstAuthorId = post.populatedAuthors?.[0]?.id
+  const author = firstAuthorId ? await getAuthorProfile(firstAuthorId) : null
   const related = (post.relatedPosts ?? []).filter(
     (relatedPost): relatedPost is Post => typeof relatedPost === 'object',
   )
@@ -38,9 +41,9 @@ export function PostContent({ post }: Props) {
             {post.tags && post.tags.length > 0 && <TagList tags={post.tags} />}
           </div>
 
-          {firstAuthor && typeof firstAuthor === 'object' && (
+          {author?.bio && (
             <div className="mt-12">
-              <AuthorBio author={firstAuthor} />
+              <AuthorBio author={author} />
             </div>
           )}
         </div>
