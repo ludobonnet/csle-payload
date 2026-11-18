@@ -6,6 +6,7 @@ import { en } from '@payloadcms/translations/languages/en'
 import { fr } from '@payloadcms/translations/languages/fr'
 import { fileURLToPath } from 'url'
 
+import { isUserAccount } from './access/authenticated'
 import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
@@ -80,7 +81,7 @@ export default buildConfig({
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
         // Allow logged in users to execute this endpoint (default)
-        if (req.user) return true
+        if (isUserAccount(req.user)) return true
 
         const secret = process.env.CRON_SECRET
         if (!secret) return false
