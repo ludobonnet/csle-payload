@@ -22,6 +22,10 @@ const likePattern = (word: string) => `%${word.replace(/[\\%_]/g, (c) => `\\${c}
 /** Plafond de résultats : au-delà, la recherche est trop vague pour être utile. */
 const MAX_IDS = 200
 
+/** Bornes de la requête lue dans l'URL : longueur et nombre de mots distincts. */
+const MAX_QUERY_LENGTH = 100
+const MAX_WORDS = 6
+
 /**
  * Recherche plein texte dans les articles publiés : titre, description et texte de l'article
  * (seuls les champs `text` du JSON Lexical, pas ses clés techniques). Chaque mot doit
@@ -30,9 +34,14 @@ const MAX_IDS = 200
  * avec le contrôle d'accès.
  */
 export async function searchPostIds(payload: Payload, query: string): Promise<number[]> {
-  const words = normalizeJs(query)
-    .split(/\s+/)
-    .filter((word) => word.length > 1)
+  // Entrée bornée : chaque mot ajoute un parcours du texte de tous les articles
+  const words = [
+    ...new Set(
+      normalizeJs(query.slice(0, MAX_QUERY_LENGTH))
+        .split(/\s+/)
+        .filter((word) => word.length > 1),
+    ),
+  ].slice(0, MAX_WORDS)
   if (words.length === 0) return []
 
   const title = normalizeSql(sql`p.title`)
