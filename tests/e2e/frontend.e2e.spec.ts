@@ -53,6 +53,11 @@ test.describe('Site public', () => {
     expect((await request.get('/tag/mot-cle-inexistant')).status()).toBe(404)
   })
 
+  test('intertitres WordPress rétablis dans les articles', async ({ page }) => {
+    await page.goto('/4-jours-rome')
+    await expect(page.getByRole('heading', { name: 'Arrivée à Rome', level: 2 })).toBeVisible()
+  })
+
   test('bio de l’autrice en fin d’article', async ({ page }) => {
     await page.goto('/faire-un-safari-en-afrique-du-sud')
     await expect(page.getByRole('complementary', { name: 'À propos de Sandrine' })).toBeVisible()
