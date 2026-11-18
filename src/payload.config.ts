@@ -2,6 +2,8 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
+import { en } from '@payloadcms/translations/languages/en'
+import { fr } from '@payloadcms/translations/languages/fr'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
@@ -20,6 +22,10 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  i18n: {
+    supportedLanguages: { fr, en },
+    fallbackLanguage: 'fr',
+  },
   admin: {
     importMap: {
       baseDir: path.resolve(dirname),
