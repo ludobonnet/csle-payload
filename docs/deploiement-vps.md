@@ -69,6 +69,9 @@ Corrigé dans les scripts de migration, puis articles rejoués sur une **copie l
 - [ ] SEO : contrôler les URLs indexées de l'ancien site (Search Console) contre les slugs actuels ; décider du sort de « Non classé ».
 - [x] Images : qualité 75, `sizes` réels, recadrage `object-cover` en mode fill (images déformées auparavant).
 - [x] Vidéos : bloc `embed` branché dans le rendu RichText (les 198 vidéos étaient invisibles).
+- [ ] **Publications programmées : installer le cron** de la file de tâches Payload (sans lui, un article programmé ne sort jamais) :
+      `sudo install -m644 -o root -g root ops/csle-jobs.cron /etc/cron.d/csle-jobs`. Appelle `/api/payload-jobs/run` chaque minute avec
+      `CRON_SECRET` (lu dans `front.env`). Pas de `jobs.autoRun` : hors requête Next, `revalidatePath` échoue (testé le 2026-11-18).
 - [ ] (Option) `@payloadcms/email-resend` depuis `csle@send.bonnet.pro` pour la réinitialisation de mot de passe.
 - [x] Nettoyage : `docker-compose.yml`, `Dockerfile` supprimés ; `README.md` et `CLAUDE.md` à jour.
 - [x] Tests : convertisseurs inclus dans `pnpm test:int` (29), e2e des parcours publics (6).
